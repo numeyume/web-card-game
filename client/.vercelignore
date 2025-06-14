@@ -8,3 +8,12 @@ yarn-debug.log*
 yarn-error.log*
 .DS_Store
 Thumbs.db
+package-lock.json
+vite.config.ts
+tsconfig.json
+tsconfig.node.json
+src/
+public/
+tailwind.config.js
+postcss.config.js
+eslint.config.js

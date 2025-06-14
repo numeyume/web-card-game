@@ -5,12 +5,15 @@ services:
     plan: free
     region: oregon
     branch: main
-    rootDir: .
+    rootDir: server
+    runtime: nodejs
     build:
       env:
-        NODE_VERSION: 18
-    buildCommand: npm install
-    startCommand: node server/index.cjs
+        NODE_VERSION: "18"
+        NPM_CONFIG_ENGINE_STRICT: "true"
+        FORCE_NODE_ENV: "true"
+    buildCommand: npm install --production --no-optional
+    startCommand: node index.cjs
     healthCheckPath: /api/health
     envVars:
       - key: NODE_ENV

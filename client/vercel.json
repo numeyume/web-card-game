@@ -1,3 +1,16 @@
 {
-  "outputDirectory": "dist"
+  "version": 2,
+  "name": "web-card-game-client",
+  "outputDirectory": "dist",
+  "buildCommand": null,
+  "installCommand": null,
+  "framework": null,
+  "public": false,
+  "functions": {},
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
+    }
+  ]
 }

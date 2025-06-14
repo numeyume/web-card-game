@@ -2,11 +2,10 @@
   "name": "web-card-game-server",
   "version": "0.1.0",
   "private": true,
-  "type": "module",
   "scripts": {
-    "dev": "tsx watch src/index.ts",
-    "build": "tsc",
-    "start": "node dist/index.js",
+    "dev": "node index.cjs",
+    "build": "echo 'No build step needed for CommonJS'",
+    "start": "node index.cjs",
     "test": "jest",
     "test:watch": "jest --watch",
     "lint": "eslint src --ext .ts --fix"

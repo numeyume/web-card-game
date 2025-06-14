@@ -82,6 +82,24 @@ app.use((req, res, next) => {
 // Mock data
 const rooms = new Map();
 
+// Root route - Server info
+app.get('/', (req, res) => {
+  res.json({
+    name: 'Web Card Game Server',
+    version: '1.0.0',
+    status: 'running',
+    environment: process.env.NODE_ENV || 'development',
+    timestamp: new Date().toISOString(),
+    endpoints: {
+      health: '/api/health',
+      rooms: '/api/rooms',
+      websocket: 'Socket.IO enabled'
+    },
+    server: 'Render.com',
+    client: process.env.CLIENT_URL || 'http://localhost:5173'
+  });
+});
+
 // Health check
 app.get('/health', (req, res) => {
   res.json({

@@ -1,0 +1,36 @@
+services:
+  - type: web
+    name: web-card-game-server
+    env: node
+    buildCommand: npm install
+    startCommand: node index.cjs
+    plan: free
+    region: oregon
+    branch: main
+    rootDir: .
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: JWT_SECRET
+        generateValue: true
+      - key: MONGODB_URI
+        sync: false  # Set manually in Render dashboard
+      - key: CLIENT_URL
+        value: https://your-app.vercel.app
+      - key: PRODUCTION_CLIENT_URL
+        value: https://your-app.vercel.app
+      - key: MAX_ROOMS
+        value: 100
+      - key: MAX_PLAYERS_PER_ROOM
+        value: 4
+      - key: GAME_SESSION_TIMEOUT
+        value: 3600000
+      - key: VOTING_SESSION_DURATION
+        value: 300000
+      - key: ENABLE_DEBUG_LOGS
+        value: true
+      - key: ENABLE_MONGODB_FALLBACK
+        value: true

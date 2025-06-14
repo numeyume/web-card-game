@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Card Builder Test</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { margin: 0; font-family: Arial, sans-serif; }
+        .card { @apply bg-zinc-800 rounded-xl p-6 border border-zinc-700; }
+        .button-primary { @apply bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg font-medium transition-colors; }
+    </style>
+</head>
+<body class="bg-zinc-900 text-white min-h-screen">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState } = React;
+
+        // シンプルなカードビルダーコンポーネント
+        function CardBuilder() {
+            const [cardName, setCardName] = useState('');
+            const [cost, setCost] = useState(0);
+            const [cardType, setCardType] = useState('Action');
+            const [description, setDescription] = useState('');
+            const [effects, setEffects] = useState([]);
+
+            const effectTemplates = [
+                { id: 'draw', name: 'Draw Cards', icon: '🃏', type: 'draw' },
+                { id: 'coin', name: 'Gain Coins', icon: '🪙', type: 'gain_coin' },
+                { id: 'action', name: 'Gain Actions', icon: '⚡', type: 'gain_action' },
+                { id: 'buy', name: 'Gain Buys', icon: '🛒', type: 'gain_buy' },
+                { id: 'attack', name: 'Attack', icon: '⚔️', type: 'attack' },
+                { id: 'card', name: 'Gain Card', icon: '📥', type: 'gain_card' }
+            ];
+
+            // 説明自動生成機能
+            const generateDescription = (effectsList) => {
+                if (effectsList.length === 0) return '';
+                
+                const descriptions = effectsList.map(effect => {
+                    const template = effectTemplates.find(t => t.type === effect.type);
+                    const targetText = effect.target === 'opponent' ? '（相手に）' : 
+                                     effect.target === 'all' ? '（全員に）' : '';
+                    
+                    switch (effect.type) {
+                        case 'draw':
+                            return `カード+${effect.value}${targetText}`;
+                        case 'gain_coin':
+                            return `コイン+${effect.value}${targetText}`;
+                        case 'gain_action':
+                            return `アクション+${effect.value}${targetText}`;
+                        case 'gain_buy':
+                            return `購入+${effect.value}${targetText}`;
+                        case 'attack':
+                            return `攻撃${effect.value}${targetText}`;
+                        case 'gain_card':
+                            return `カード獲得${effect.value}${targetText}`;
+                        default:
+                            return `${template?.name}+${effect.value}${targetText}`;
+                    }
+                });
+                
+                return descriptions.join('、') + 'を得る。';
+            };
+
+            const addEffect = (template) => {
+                if (effects.length >= 3) {
+                    alert('最大3つまでのエフェクトです');
+                    return;
+                }
+                
+                const newEffect = {
+                    type: template.type,
+                    value: 1,
+                    target: 'self'
+                };
+                
+                const newEffects = [...effects, newEffect];
+                setEffects(newEffects);
+                
+                // 説明を自動生成
+                const autoDescription = generateDescription(newEffects);
+                setDescription(autoDescription);
+            };
+
+            const removeEffect = (index) => {
+                const newEffects = effects.filter((_, i) => i !== index);
+                setEffects(newEffects);
+                
+                // 説明を自動更新
+                const autoDescription = generateDescription(newEffects);
+                setDescription(autoDescription);
+            };
+
+            const updateEffect = (index, field, value) => {
+                const newEffects = [...effects];
+                newEffects[index][field] = value;
+                setEffects(newEffects);
+                
+                // 説明を自動更新
+                const autoDescription = generateDescription(newEffects);
+                setDescription(autoDescription);
+            };
+
+            const generateCard = () => {
+                const card = {
+                    id: `custom_${Date.now()}`,
+                    name: cardName || 'Untitled Card',
+                    cost: cost,
+                    type: cardType,
+                    effects: effects,
+                    description: description || 'No description',
+                    createdAt: new Date().toISOString()
+                };
+
+                console.log('Generated Card:', card);
+                alert('カードが生成されました！（コンソールでJSONを確認してください）');
+                return card;
+            };
+
+            return (
+                <div className="min-h-screen bg-zinc-900 text-white p-6">
+                    <div className="max-w-7xl mx-auto">
+                        <h1 className="text-3xl font-bold mb-8 text-center">🎴 Card Builder Test</h1>
+                        
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                            {/* 左側: カード設定 */}
+                            <div className="space-y-6">
+                                {/* 基本情報 */}
+                                <div className="card">
+                                    <h2 className="text-xl font-semibold mb-4">基本情報</h2>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-sm font-medium mb-2">カード名</label>
+                                            <input
+                                                type="text"
+                                                value={cardName}
+                                                onChange={(e) => setCardName(e.target.value)}
+                                                className="w-full px-3 py-2 bg-zinc-700 border border-zinc-600 rounded-lg text-white"
+                                                placeholder="例: 村"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium mb-2">コスト</label>
+                                            <input
+                                                type="number"
+                                                value={cost}
+                                                onChange={(e) => setCost(parseInt(e.target.value) || 0)}
+                                                min="0"
+                                                max="10"
+                                                className="w-full px-3 py-2 bg-zinc-700 border border-zinc-600 rounded-lg text-white"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="mt-4">
+                                        <label className="block text-sm font-medium mb-2">タイプ</label>
+                                        <select
+                                            value={cardType}
+                                            onChange={(e) => setCardType(e.target.value)}
+                                            className="w-full px-3 py-2 bg-zinc-700 border border-zinc-600 rounded-lg text-white"
+                                        >
+                                            <option value="Action">Action</option>
+                                            <option value="Treasure">Treasure</option>
+                                            <option value="Victory">Victory</option>
+                                            <option value="Custom">Custom</option>
+                                        </select>
+                                    </div>
+                                    <div className="mt-4">
+                                        <label className="block text-sm font-medium mb-2">説明</label>
+                                        <textarea
+                                            value={description}
+                                            onChange={(e) => setDescription(e.target.value)}
+                                            className="w-full px-3 py-2 bg-zinc-700 border border-zinc-600 rounded-lg text-white"
+                                            rows="3"
+                                            placeholder="例: アクション+2、カード+1を得る"
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* エフェクト選択 */}
+                                <div className="card">
+                                    <h2 className="text-xl font-semibold mb-4">利用可能なエフェクト</h2>
+                                    <div className="grid grid-cols-3 gap-3">
+                                        {effectTemplates.map((template) => (
+                                            <button
+                                                key={template.id}
+                                                onClick={() => addEffect(template)}
+                                                className="p-3 bg-zinc-700 hover:bg-zinc-600 rounded-lg border border-zinc-600 transition-colors text-center"
+                                            >
+                                                <div className="text-2xl mb-1">{template.icon}</div>
+                                                <div className="text-xs">{template.name}</div>
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* 選択したエフェクト */}
+                                <div className="card">
+                                    <h2 className="text-xl font-semibold mb-4">
+                                        カードエフェクト ({effects.length}/3)
+                                    </h2>
+                                    {effects.length === 0 ? (
+                                        <div className="text-center text-zinc-400 py-8">
+                                            <div className="text-3xl mb-2">🎯</div>
+                                            <div>上のエフェクトをクリックして追加</div>
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-3">
+                                            {effects.map((effect, index) => {
+                                                const template = effectTemplates.find(t => t.type === effect.type);
+                                                return (
+                                                    <div key={index} className="p-3 bg-zinc-700 rounded-lg border border-zinc-600">
+                                                        <div className="flex items-center justify-between mb-2">
+                                                            <span className="font-medium">
+                                                                {template?.icon} {template?.name}
+                                                            </span>
+                                                            <button
+                                                                onClick={() => removeEffect(index)}
+                                                                className="text-red-400 hover:text-red-300"
+                                                            >
+                                                                ✕
+                                                            </button>
+                                                        </div>
+                                                        <div className="grid grid-cols-2 gap-2">
+                                                            <div>
+                                                                <label className="block text-xs text-zinc-400 mb-1">値</label>
+                                                                <input
+                                                                    type="number"
+                                                                    value={effect.value}
+                                                                    onChange={(e) => updateEffect(index, 'value', parseInt(e.target.value) || 1)}
+                                                                    min="1"
+                                                                    max="10"
+                                                                    className="w-full px-2 py-1 bg-zinc-800 border border-zinc-600 rounded text-sm"
+                                                                />
+                                                            </div>
+                                                            <div>
+                                                                <label className="block text-xs text-zinc-400 mb-1">対象</label>
+                                                                <select
+                                                                    value={effect.target}
+                                                                    onChange={(e) => updateEffect(index, 'target', e.target.value)}
+                                                                    className="w-full px-2 py-1 bg-zinc-800 border border-zinc-600 rounded text-sm"
+                                                                >
+                                                                    <option value="self">自分</option>
+                                                                    <option value="opponent">相手</option>
+                                                                    <option value="all">全員</option>
+                                                                </select>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* 右側: プレビュー */}
+                            <div className="space-y-6">
+                                {/* カードプレビュー */}
+                                <div className="card">
+                                    <h2 className="text-xl font-semibold mb-4">カードプレビュー</h2>
+                                    <div className="w-64 mx-auto bg-gradient-to-b from-zinc-700 to-zinc-800 rounded-xl p-4 border border-zinc-600">
+                                        <div className="flex justify-between items-center mb-2">
+                                            <h3 className="font-bold text-lg">{cardName || 'Untitled Card'}</h3>
+                                            <div className="bg-yellow-500 text-black rounded-full w-8 h-8 flex items-center justify-center font-bold">
+                                                {cost}
+                                            </div>
+                                        </div>
+                                        <div className="text-sm text-zinc-300 mb-3">{cardType}</div>
+                                        <div className="border-t border-zinc-600 pt-3 mb-3">
+                                            <div className="text-sm">{description || 'No description'}</div>
+                                        </div>
+                                        {effects.length > 0 && (
+                                            <div className="space-y-1">
+                                                {effects.map((effect, index) => {
+                                                    const template = effectTemplates.find(t => t.type === effect.type);
+                                                    return (
+                                                        <div key={index} className="text-xs text-green-300">
+                                                            {template?.icon} {template?.name} +{effect.value}
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        )}
+                                        <div className="mt-3 text-xs text-zinc-400 border-t border-zinc-600 pt-2">
+                                            Power Level: {effects.reduce((sum, e) => sum + e.value, 0)}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* 生成ボタン */}
+                                <div className="card">
+                                    <h2 className="text-xl font-semibold mb-4">カード生成</h2>
+                                    <button
+                                        onClick={generateCard}
+                                        className="w-full button-primary text-lg py-3"
+                                    >
+                                        🎴 カードを生成
+                                    </button>
+                                    <div className="mt-3 text-sm text-zinc-400">
+                                        生成されたJSONはブラウザのコンソールで確認できます
+                                    </div>
+                                </div>
+
+                                {/* APIテスト */}
+                                <div className="card">
+                                    <h2 className="text-xl font-semibold mb-4">APIテスト</h2>
+                                    <div className="space-y-2">
+                                        <button
+                                            onClick={() => {
+                                                fetch('/api/cards')
+                                                    .then(res => res.json())
+                                                    .then(data => {
+                                                        console.log('Cards API:', data);
+                                                        alert('カードAPI成功！コンソールを確認してください');
+                                                    })
+                                                    .catch(err => {
+                                                        console.error('API Error:', err);
+                                                        alert('API接続失敗: ' + err.message);
+                                                    });
+                                            }}
+                                            className="w-full bg-green-600 hover:bg-green-500 text-white px-4 py-2 rounded-lg transition-colors"
+                                        >
+                                            📡 カード一覧API テスト
+                                        </button>
+                                        <button
+                                            onClick={() => {
+                                                fetch('/health')
+                                                    .then(res => res.json())
+                                                    .then(data => {
+                                                        console.log('Health:', data);
+                                                        alert('サーバー正常: ' + data.status);
+                                                    })
+                                                    .catch(err => {
+                                                        console.error('Health Error:', err);
+                                                        alert('サーバー接続失敗: ' + err.message);
+                                                    });
+                                            }}
+                                            className="w-full bg-purple-600 hover:bg-purple-500 text-white px-4 py-2 rounded-lg transition-colors"
+                                        >
+                                            💓 ヘルスチェック
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        // アプリをレンダリング
+        ReactDOM.render(<CardBuilder />, document.getElementById('root'));
+    </script>
+</body>
+</html>

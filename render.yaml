@@ -2,12 +2,15 @@ services:
   - type: web
     name: web-card-game-server
     env: node
-    buildCommand: npm install
-    startCommand: node index.cjs
     plan: free
     region: oregon
     branch: main
     rootDir: .
+    build:
+      env:
+        NODE_VERSION: 18
+    buildCommand: npm install
+    startCommand: node server/index.cjs
     healthCheckPath: /api/health
     envVars:
       - key: NODE_ENV
@@ -17,7 +20,7 @@ services:
       - key: JWT_SECRET
         generateValue: true
       - key: MONGODB_URI
-        sync: false  # Set manually in Render dashboard
+        sync: false
       - key: CLIENT_URL
         value: https://your-app.vercel.app
       - key: PRODUCTION_CLIENT_URL

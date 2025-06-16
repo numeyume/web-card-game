@@ -5,7 +5,7 @@
 
 export const CARD_TYPES = ['Action', 'Treasure', 'Victory', 'Curse', 'Custom'];
 
-export const EFFECT_TYPES = ['draw', 'gain_coin', 'gain_action', 'gain_buy', 'gain_card', 'attack', 'custom'];
+export const EFFECT_TYPES = ['draw', 'coin', 'action', 'buy', 'gain_coin', 'gain_action', 'gain_buy', 'gain_card', 'attack', 'custom'];
 
 export const EFFECT_TARGETS = ['self', 'opponent', 'all'];
 

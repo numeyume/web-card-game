@@ -199,7 +199,7 @@ function validateCard(cardData) {
   
   if (cardData.effects && Array.isArray(cardData.effects)) {
     cardData.effects.forEach((effect, index) => {
-      if (!['draw', 'action', 'buy', 'coin'].includes(effect.type)) {
+      if (!['draw', 'coin', 'action', 'buy', 'gain_coin', 'gain_action', 'gain_buy', 'gain_card', 'attack', 'custom'].includes(effect.type)) {
         errors.push(`効果${index + 1}: 無効な効果タイプです`);
       }
       if (typeof effect.value !== 'number' || effect.value < 0) {

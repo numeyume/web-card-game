@@ -138,6 +138,17 @@ function validateCard(cardData) {
     errors.push('無効なカードタイプです');
   }
   
+  if (cardData.effects && Array.isArray(cardData.effects)) {
+    cardData.effects.forEach((effect, index) => {
+      if (!['draw', 'coin', 'action', 'buy', 'gain_coin', 'gain_action', 'gain_buy', 'gain_card', 'attack', 'custom'].includes(effect.type)) {
+        errors.push(`効果${index + 1}: 無効な効果タイプです`);
+      }
+      if (typeof effect.value !== 'number' || effect.value < 0) {
+        errors.push(`効果${index + 1}: 効果値は0以上の数値である必要があります`);
+      }
+    });
+  }
+  
   return {
     isValid: errors.length === 0,
     errors

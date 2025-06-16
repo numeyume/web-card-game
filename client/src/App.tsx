@@ -248,7 +248,7 @@ function App() {
 
             {currentView === 'collection' && (
               <div className="animate-slide-up">
-                <CardCollection />
+                <CardCollection onOpenCardBuilder={() => setCurrentView('builder')} />
               </div>
             )}
 

@@ -2,9 +2,11 @@ import { useState, useEffect } from 'react'
 import toast from 'react-hot-toast'
 import type { Card } from '@/types'
 
-interface CardCollectionProps {}
+interface CardCollectionProps {
+  onOpenCardBuilder?: () => void
+}
 
-export function CardCollection({}: CardCollectionProps) {
+export function CardCollection({ onOpenCardBuilder }: CardCollectionProps) {
   const [cards, setCards] = useState<Card[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
@@ -168,34 +170,34 @@ export function CardCollection({}: CardCollectionProps) {
   }
 
   return (
-    <div className="max-w-7xl mx-auto">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6">
       {/* ヘッダー */}
-      <div className="text-center mb-8">
-        <h1 className="text-4xl font-bold mb-4 bg-gradient-to-r from-purple-400 to-pink-500 bg-clip-text text-transparent">
+      <div className="text-center mb-6 sm:mb-8">
+        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-4 bg-gradient-to-r from-purple-400 to-pink-500 bg-clip-text text-transparent">
           📚 カードコレクション
         </h1>
-        <p className="text-xl text-zinc-300 max-w-2xl mx-auto">
+        <p className="text-sm sm:text-lg lg:text-xl text-zinc-300 max-w-2xl mx-auto px-4">
           作成したすべてのカードを確認・管理できます。お気に入りのカードを見つけて戦略を練りましょう。
         </p>
       </div>
 
       {/* 統計情報 */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
-        <div className="card text-center">
-          <div className="text-2xl font-bold text-blue-400">{cards.length}</div>
-          <div className="text-sm text-zinc-400">総カード数</div>
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 sm:gap-4 mb-6">
+        <div className="card text-center py-3 sm:py-4">
+          <div className="text-lg sm:text-2xl font-bold text-blue-400">{cards.length}</div>
+          <div className="text-xs sm:text-sm text-zinc-400">総カード数</div>
         </div>
         {Object.entries(typeStats).map(([type, count]) => (
-          <div key={type} className="card text-center">
-            <div className="text-2xl font-bold text-purple-400">{count}</div>
-            <div className="text-sm text-zinc-400">{type}カード</div>
+          <div key={type} className="card text-center py-3 sm:py-4">
+            <div className="text-lg sm:text-2xl font-bold text-purple-400">{count}</div>
+            <div className="text-xs sm:text-sm text-zinc-400">{type}カード</div>
           </div>
         ))}
       </div>
 
       {/* 検索・フィルター */}
       <div className="card mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <div>
             <label className="block text-sm font-medium text-zinc-300 mb-2">
               検索
@@ -255,9 +257,9 @@ export function CardCollection({}: CardCollectionProps) {
               : '検索条件を変更してみてください。'
             }
           </p>
-          {cards.length === 0 && (
+          {cards.length === 0 && onOpenCardBuilder && (
             <button 
-              onClick={() => window.location.reload()}
+              onClick={onOpenCardBuilder}
               className="btn-primary"
             >
               🎨 カードビルダーへ
@@ -265,16 +267,16 @@ export function CardCollection({}: CardCollectionProps) {
           )}
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           {sortedCards.map((card) => (
             <div
               key={card.id}
-              className="card hover:border-purple-500/50 transition-colors cursor-pointer"
+              className="card hover:border-purple-500/50 active:border-purple-500 transition-colors cursor-pointer select-none touch-manipulation"
               onClick={() => setSelectedCard(card)}
             >
               {/* カードヘッダー */}
               <div className="flex items-center justify-between mb-3">
-                <h3 className="font-bold text-lg truncate">{card.name}</h3>
+                <h3 className="font-bold text-base sm:text-lg truncate">{card.name}</h3>
                 <div className="flex items-center space-x-2">
                   <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getCardTypeColor(card.type)}`}>
                     {card.type}
@@ -323,12 +325,12 @@ export function CardCollection({}: CardCollectionProps) {
 
       {/* カード詳細モーダル */}
       {selectedCard && (
-        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
-          <div className="bg-zinc-800 rounded-lg border border-zinc-600 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6">
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-2 sm:p-4">
+          <div className="bg-zinc-800 rounded-lg border border-zinc-600 max-w-2xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-y-auto">
+            <div className="p-4 sm:p-6">
               {/* ヘッダー */}
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-bold">{selectedCard.name}</h2>
+              <div className="flex items-center justify-between mb-4 sm:mb-6">
+                <h2 className="text-xl sm:text-2xl font-bold">{selectedCard.name}</h2>
                 <button
                   onClick={() => setSelectedCard(null)}
                   className="text-zinc-400 hover:text-white transition-colors"
@@ -380,13 +382,13 @@ export function CardCollection({}: CardCollectionProps) {
 
               {/* アクションボタン */}
               <div className="border-t border-zinc-700 pt-4 mb-4">
-                <div className="flex justify-center space-x-4">
+                <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4">
                   <button
                     onClick={() => {
                       setEditingCard(selectedCard)
                       setSelectedCard(null)
                     }}
-                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                    className="px-4 py-3 sm:py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-medium"
                   >
                     ✏️ 編集
                   </button>
@@ -395,7 +397,7 @@ export function CardCollection({}: CardCollectionProps) {
                       setShowDeleteConfirm(selectedCard.id)
                       setSelectedCard(null)
                     }}
-                    className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+                    className="px-4 py-3 sm:py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors font-medium"
                   >
                     🗑️ 削除
                   </button>
@@ -461,9 +463,9 @@ export function CardCollection({}: CardCollectionProps) {
 
       {/* 編集モーダル */}
       {editingCard && (
-        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
-          <div className="bg-zinc-800 rounded-lg border border-zinc-600 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6">
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-2 sm:p-4">
+          <div className="bg-zinc-800 rounded-lg border border-zinc-600 max-w-2xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-y-auto">
+            <div className="p-4 sm:p-6">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-2xl font-bold">✏️ カード編集</h2>
                 <button
@@ -547,17 +549,17 @@ export function CardCollection({}: CardCollectionProps) {
                     />
                   </div>
                   
-                  <div className="flex space-x-3 pt-4">
+                  <div className="flex flex-col sm:flex-row gap-3 sm:gap-3 pt-4">
                     <button
                       type="button"
                       onClick={() => setEditingCard(null)}
-                      className="flex-1 px-4 py-2 bg-zinc-600 hover:bg-zinc-700 text-white rounded-lg transition-colors"
+                      className="flex-1 px-4 py-3 sm:py-2 bg-zinc-600 hover:bg-zinc-700 text-white rounded-lg transition-colors font-medium"
                     >
                       キャンセル
                     </button>
                     <button
                       type="submit"
-                      className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                      className="flex-1 px-4 py-3 sm:py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-medium"
                     >
                       保存
                     </button>

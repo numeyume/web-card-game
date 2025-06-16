@@ -236,8 +236,15 @@ export class DatabaseService {
     }
 
     try {
+      // Convert 'id' filter to 'cardId' for MongoDB compatibility
+      const mongoFilter = { ...filter };
+      if (mongoFilter.id) {
+        mongoFilter.cardId = mongoFilter.id;
+        delete mongoFilter.id;
+      }
+      
       return await this.db.collection('cards')
-        .find(filter)
+        .find(mongoFilter)
         .sort({ createdAt: -1 })
         .toArray();
     } catch (error) {
@@ -262,6 +269,7 @@ export class DatabaseService {
     try {
       const result = await this.db.collection('cards').insertOne({
         ...cardData,
+        cardId: cardData.id, // Add cardId field for consistency
         createdAt: new Date()
       });
       return { success: true, cardId: cardData.id, insertedId: result.insertedId };

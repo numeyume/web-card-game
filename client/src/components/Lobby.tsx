@@ -169,9 +169,9 @@ export function Lobby({ onJoinGame: _onJoinGame, onStartDominion, onStartDominio
       </div>
 
       {/* Game Options */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-8">
         <div className="card border-2 border-green-500/30 bg-gradient-to-br from-green-500/5 to-blue-500/5">
-          <div className="text-center py-6">
+          <div className="text-center py-4 sm:py-6">
             <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-green-500/20 flex items-center justify-center">
               <span className="text-2xl">📚</span>
             </div>

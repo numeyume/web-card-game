@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CPU Battle Test Interface</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #e5e5e5;
+        }
+        
+        .test-section {
+            background: #2a2a2a;
+            border: 1px solid #444;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        
+        .test-header {
+            color: #60a5fa;
+            font-size: 1.5em;
+            font-weight: bold;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .test-step {
+            background: #1f2937;
+            border-left: 4px solid #3b82f6;
+            padding: 15px;
+            margin: 10px 0;
+        }
+        
+        .test-step h4 {
+            margin: 0 0 10px 0;
+            color: #fbbf24;
+        }
+        
+        .expected {
+            background: #064e3b;
+            border-left: 4px solid #10b981;
+            padding: 10px;
+            margin: 10px 0;
+        }
+        
+        .warning {
+            background: #7c2d12;
+            border-left: 4px solid #f59e0b;
+            padding: 10px;
+            margin: 10px 0;
+        }
+        
+        .checklist {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .checklist li {
+            padding: 5px 0;
+            border-bottom: 1px solid #374151;
+        }
+        
+        .checklist li::before {
+            content: '☐ ';
+            color: #6b7280;
+            font-weight: bold;
+        }
+        
+        .checklist li.done::before {
+            content: '✅ ';
+            color: #10b981;
+        }
+        
+        .console-output {
+            background: #000;
+            color: #0f0;
+            font-family: 'Courier New', monospace;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 10px 0;
+            white-space: pre-wrap;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .iframe-container {
+            width: 100%;
+            height: 600px;
+            border: 2px solid #4b5563;
+            border-radius: 8px;
+            background: #fff;
+        }
+        
+        .control-panel {
+            display: flex;
+            gap: 10px;
+            margin: 15px 0;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        
+        .btn-primary {
+            background: #3b82f6;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #2563eb;
+        }
+        
+        .btn-secondary {
+            background: #6b7280;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: #4b5563;
+        }
+        
+        .btn-success {
+            background: #10b981;
+            color: white;
+        }
+        
+        .btn-danger {
+            background: #ef4444;
+            color: white;
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            font-weight: bold;
+        }
+        
+        .status-pending {
+            background: #fbbf24;
+            color: #1a1a1a;
+        }
+        
+        .status-pass {
+            background: #10b981;
+            color: white;
+        }
+        
+        .status-fail {
+            background: #ef4444;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <h1>🎯 CPU Battle Manual Test Interface</h1>
+    <p>この画面を使用してCPU対戦機能を手動でテストしてください。下記の手順に従って各段階を確認し、結果を記録してください。</p>
+
+    <div class="control-panel">
+        <button class="btn btn-primary" onclick="loadGame()">🎮 ゲームを読み込む</button>
+        <button class="btn btn-secondary" onclick="openConsole()">🔍 コンソールを開く</button>
+        <button class="btn btn-success" onclick="generateReport()">📋 レポート生成</button>
+        <button class="btn btn-danger" onclick="resetTest()">🔄 テストリセット</button>
+    </div>
+
+    <!-- アプリケーション表示エリア -->
+    <div class="test-section">
+        <div class="test-header">
+            🎮 アプリケーション表示
+        </div>
+        <iframe id="gameFrame" class="iframe-container" src="about:blank"></iframe>
+    </div>
+
+    <!-- Phase 1: Initial Access -->
+    <div class="test-section">
+        <div class="test-header">
+            🚀 Phase 1: 初期アクセスとナビゲーション
+        </div>
+        
+        <div class="test-step">
+            <h4>Step 1.1: アプリケーション読み込み</h4>
+            <p>上の「🎮 ゲームを読み込む」ボタンをクリックしてhttp://localhost:5174にアクセス</p>
+            <div class="expected">
+                <strong>期待する結果:</strong>
+                <ul>
+                    <li>アプリケーションが正常に読み込まれる</li>
+                    <li>ダークテーマのロビー画面が表示される</li>
+                    <li>接続ステータスが「接続済み」になる</li>
+                    <li>コンソールエラーが発生しない</li>
+                </ul>
+            </div>
+            <ul class="checklist">
+                <li onclick="toggleCheck(this)">アプリケーション読み込み完了</li>
+                <li onclick="toggleCheck(this)">ロビー画面表示</li>
+                <li onclick="toggleCheck(this)">接続ステータス確認</li>
+                <li onclick="toggleCheck(this)">コンソールエラーなし</li>
+            </ul>
+        </div>
+
+        <div class="test-step">
+            <h4>Step 1.2: ロビー画面要素確認</h4>
+            <p>ロビー画面で以下の要素が正しく表示されていることを確認</p>
+            <div class="expected">
+                <strong>期待する要素:</strong>
+                <ul>
+                    <li>ヘッダー: "🎴 ウェブカードゲーム"</li>
+                    <li>CPU対戦カード（青いグラデーション）</li>
+                    <li>「🎴 カード選択して対戦」ボタン</li>
+                    <li>「🤖 すぐに対戦」ボタン ← これをテスト</li>
+                </ul>
+            </div>
+            <ul class="checklist">
+                <li onclick="toggleCheck(this)">ヘッダー表示確認</li>
+                <li onclick="toggleCheck(this)">CPU対戦カード表示</li>
+                <li onclick="toggleCheck(this)">対戦ボタン2つ表示</li>
+                <li onclick="toggleCheck(this)">「🤖 すぐに対戦」ボタン発見</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Phase 2: CPU Battle Initiation -->
+    <div class="test-section">
+        <div class="test-header">
+            🤖 Phase 2: CPU対戦開始
+        </div>
+        
+        <div class="test-step">
+            <h4>Step 2.1: 「🤖 すぐに対戦」ボタンクリック</h4>
+            <p>CPU対戦カード内の「🤖 すぐに対戦」ボタンをクリック</p>
+            <div class="expected">
+                <strong>期待する挙動:</strong>
+                <ul>
+                    <li>コンソールに「🤖 すぐに対戦開始 - カスタムカードなし」ログ</li>
+                    <li>画面がゲーム初期化画面に変わる</li>
+                    <li>ページリロードは発生しない</li>
+                </ul>
+            </div>
+            <ul class="checklist">
+                <li onclick="toggleCheck(this)">ボタンクリック反応あり</li>
+                <li onclick="toggleCheck(this)">コンソールログ確認</li>
+                <li onclick="toggleCheck(this)">画面遷移確認</li>
+                <li onclick="toggleCheck(this)">リロードなし確認</li>
+            </ul>
+        </div>
+
+        <div class="test-step">
+            <h4>Step 2.2: ゲーム初期化画面表示</h4>
+            <p>ゲーム初期化画面が正しく表示されることを確認</p>
+            <div class="expected">
+                <strong>期待する表示:</strong>
+                <ul>
+                    <li>タイトル: "🎯 CPU対戦"</li>
+                    <li>説明: "CPUプレイヤーと1対1で対戦しましょう"</li>
+                    <li>デバッグ情報パネル</li>
+                    <li>ローディングインジケーター</li>
+                </ul>
+            </div>
+            <ul class="checklist">
+                <li onclick="toggleCheck(this)">タイトル表示確認</li>
+                <li onclick="toggleCheck(this)">説明文表示確認</li>
+                <li onclick="toggleCheck(this)">デバッグ情報表示</li>
+                <li onclick="toggleCheck(this)">ローディング表示</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Phase 3: Automatic Game Start -->
+    <div class="test-section">
+        <div class="test-header">
+            ⚡ Phase 3: 自動ゲーム開始
+        </div>
+        
+        <div class="test-step">
+            <h4>Step 3.1: 自動初期化プロセス</h4>
+            <p>約1-2秒待機してゲームが自動的に初期化されることを確認</p>
+            <div class="expected">
+                <strong>期待するシーケンス:</strong>
+                <ul>
+                    <li>自動的にuseEffectが起動</li>
+                    <li>startGame()関数が実行される</li>
+                    <li>成功トースト: "🎯 CPU対戦が開始されました！（標準ドミニオン）"</li>
+                    <li>ゲームボード画面に自動遷移</li>
+                </ul>
+            </div>
+            <ul class="checklist">
+                <li onclick="toggleCheck(this)">自動初期化開始</li>
+                <li onclick="toggleCheck(this)">成功トースト表示</li>
+                <li onclick="toggleCheck(this)">ゲームボードに遷移</li>
+                <li onclick="toggleCheck(this)">ブラックスクリーンなし</li>
+            </ul>
+        </div>
+
+        <div class="test-step">
+            <h4>Step 3.2: ゲームボード表示確認</h4>
+            <p>ゲームボード画面が正しく表示されることを確認</p>
+            <div class="expected">
+                <strong>期待する要素:</strong>
+                <ul>
+                    <li>ヘッダー: "🎯 CPU対戦" + ターンカウンター</li>
+                    <li>プレイヤー統計セクション</li>
+                    <li>勝利条件進捗表示</li>
+                    <li>現在プレイヤー表示（最初は人間プレイヤー）</li>
+                </ul>
+            </div>
+            <ul class="checklist">
+                <li onclick="toggleCheck(this)">ヘッダー表示</li>
+                <li onclick="toggleCheck(this)">統計セクション</li>
+                <li onclick="toggleCheck(this)">勝利条件進捗</li>
+                <li onclick="toggleCheck(this)">人間プレイヤーターン</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Phase 4: Game Flow -->
+    <div class="test-section">
+        <div class="test-header">
+            🎮 Phase 4: ゲームフロー確認
+        </div>
+        
+        <div class="test-step">
+            <h4>Step 4.1: 人間プレイヤーターン（アクションフェーズ）</h4>
+            <p>人間プレイヤーのアクションフェーズの動作を確認</p>
+            <div class="expected">
+                <strong>期待する状態:</strong>
+                <ul>
+                    <li>フェーズ表示: "🎯 アクション"</li>
+                    <li>リソース: アクション=1, 購入=1, コイン=0</li>
+                    <li>手札: 5枚（初期は屋敷3枚、銅貨7枚から5枚）</li>
+                    <li>サプライ: 全ドミニオンカード表示</li>
+                </ul>
+            </div>
+            <ul class="checklist">
+                <li onclick="toggleCheck(this)">アクションフェーズ確認</li>
+                <li onclick="toggleCheck(this)">リソース表示確認</li>
+                <li onclick="toggleCheck(this)">手札5枚確認</li>
+                <li onclick="toggleCheck(this)">サプライ表示確認</li>
+            </ul>
+        </div>
+
+        <div class="test-step">
+            <h4>Step 4.2: 購入フェーズ移行</h4>
+            <p>「購入へ」ボタンをクリックして購入フェーズに移行</p>
+            <div class="expected">
+                <strong>期待する変化:</strong>
+                <ul>
+                    <li>フェーズ表示: "💰 購入"</li>
+                    <li>「💰 財宝一括」ボタン表示</li>
+                    <li>購入可能カードが緑枠で表示</li>
+                    <li>「ターン終了」ボタン表示</li>
+                </ul>
+            </div>
+            <ul class="checklist">
+                <li onclick="toggleCheck(this)">購入フェーズ確認</li>
+                <li onclick="toggleCheck(this)">財宝一括ボタン</li>
+                <li onclick="toggleCheck(this)">購入可能表示</li>
+                <li onclick="toggleCheck(this)">ターン終了ボタン</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Phase 5: CPU Behavior -->
+    <div class="test-section">
+        <div class="test-header">
+            🤖 Phase 5: CPU動作確認
+        </div>
+        
+        <div class="test-step">
+            <h4>Step 5.1: CPUターン開始</h4>
+            <p>「ターン終了」をクリックしてCPUターンに移行することを確認</p>
+            <div class="expected">
+                <strong>期待するシーケンス:</strong>
+                <ul>
+                    <li>クリーンアップ実行（手札破棄、5枚ドロー）</li>
+                    <li>ターンカウンター増加</li>
+                    <li>CPUターン自動開始</li>
+                    <li>CPU表示: 「🤖 [CPU名] のターン」</li>
+                </ul>
+            </div>
+            <ul class="checklist">
+                <li onclick="toggleCheck(this)">クリーンアップ実行</li>
+                <li onclick="toggleCheck(this)">ターン増加</li>
+                <li onclick="toggleCheck(this)">CPUターン開始</li>
+                <li onclick="toggleCheck(this)">CPU表示確認</li>
+            </ul>
+        </div>
+
+        <div class="test-step">
+            <h4>Step 5.2: CPU自動プレイ</h4>
+            <p>CPUが自動的にアクションと購入を実行することを確認</p>
+            <div class="warning">
+                重要: この段階でコンソールを開いてCPUの思考ログを確認してください
+            </div>
+            <div class="expected">
+                <strong>期待する挙動:</strong>
+                <ul>
+                    <li>フェーズ表示が自動変化</li>
+                    <li>CPUが財宝カードを自動プレイ</li>
+                    <li>CPUが戦略的購入を実行</li>
+                    <li>1-2秒後に人間ターンに戻る</li>
+                </ul>
+            </div>
+            <ul class="checklist">
+                <li onclick="toggleCheck(this)">フェーズ自動変化</li>
+                <li onclick="toggleCheck(this)">CPU財宝プレイ</li>
+                <li onclick="toggleCheck(this)">CPU購入実行</li>
+                <li onclick="toggleCheck(this)">人間ターン復帰</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Console Output Section -->
+    <div class="test-section">
+        <div class="test-header">
+            📊 コンソールログ監視
+        </div>
+        <p>ブラウザのコンソール（F12）を開いて以下のログを確認してください:</p>
+        <div class="console-output" id="consoleOutput">
+予期されるログ例:
+🤖 すぐに対戦開始 - カスタムカードなし
+🎯 InteractiveTutorial - ゲーム開始試行
+🎯 DominionEngine.startGame呼び出し中...
+🎯 ゲーム状態設定完了
+🤖 [CPU名]のターンが開始されます
+🤖 CPUターン実行開始...
+🎯 CPUアクションフェーズ実行
+💰 CPU購入フェーズ実行
+🤖 CPUターン完了 - プレイヤーターンに戻ります
+        </div>
+        <button class="btn btn-secondary" onclick="captureConsole()">📋 コンソールをキャプチャ</button>
+    </div>
+
+    <!-- Test Results -->
+    <div class="test-section">
+        <div class="test-header">
+            📋 テスト結果サマリー
+        </div>
+        <div id="testResults">
+            <p>テストを実行してください。結果がここに表示されます。</p>
+        </div>
+    </div>
+
+    <script>
+        let testResults = {
+            phases: {},
+            startTime: null,
+            endTime: null
+        };
+
+        function loadGame() {
+            const frame = document.getElementById('gameFrame');
+            frame.src = 'http://localhost:5174';
+            testResults.startTime = new Date();
+        }
+
+        function openConsole() {
+            alert('F12キーを押してブラウザの開発者ツールを開き、Consoleタブを選択してください。');
+        }
+
+        function toggleCheck(element) {
+            element.classList.toggle('done');
+            updateTestResults();
+        }
+
+        function updateTestResults() {
+            const allItems = document.querySelectorAll('.checklist li');
+            const doneItems = document.querySelectorAll('.checklist li.done');
+            const progress = (doneItems.length / allItems.length * 100).toFixed(1);
+            
+            const resultsDiv = document.getElementById('testResults');
+            resultsDiv.innerHTML = `
+                <div style="margin-bottom: 20px;">
+                    <h3>進捗: ${doneItems.length}/${allItems.length} (${progress}%)</h3>
+                    <div style="background: #374151; height: 20px; border-radius: 10px; overflow: hidden;">
+                        <div style="background: #10b981; height: 100%; width: ${progress}%; transition: width 0.3s;"></div>
+                    </div>
+                </div>
+                <div>
+                    <h4>完了項目:</h4>
+                    <ul>
+                        ${Array.from(doneItems).map(item => `<li>✅ ${item.textContent}</li>`).join('')}
+                    </ul>
+                </div>
+            `;
+        }
+
+        function captureConsole() {
+            const output = document.getElementById('consoleOutput');
+            const timestamp = new Date().toLocaleTimeString();
+            output.textContent += `\\n\\n[${timestamp}] コンソールログをここに手動でコピー＆ペーストしてください\\n`;
+        }
+
+        function generateReport() {
+            testResults.endTime = new Date();
+            const duration = testResults.endTime - testResults.startTime;
+            
+            const allItems = document.querySelectorAll('.checklist li');
+            const doneItems = document.querySelectorAll('.checklist li.done');
+            const passRate = (doneItems.length / allItems.length * 100).toFixed(1);
+            
+            const report = `
+=== CPU対戦機能テストレポート ===
+実行日時: ${new Date().toLocaleString()}
+テスト時間: ${Math.floor(duration / 60000)}分${Math.floor((duration % 60000) / 1000)}秒
+完了率: ${doneItems.length}/${allItems.length} (${passRate}%)
+
+【完了項目】
+${Array.from(doneItems).map(item => `✅ ${item.textContent}`).join('\\n')}
+
+【未完了項目】
+${Array.from(allItems).filter(item => !item.classList.contains('done')).map(item => `❌ ${item.textContent}`).join('\\n')}
+
+【総合評価】
+${passRate >= 90 ? '🟢 EXCELLENT - CPU対戦機能は正常に動作しています' :
+  passRate >= 70 ? '🟡 GOOD - 軽微な問題がありますが基本機能は動作しています' :
+  passRate >= 50 ? '🟠 WARNING - 重要な問題があります。修正が必要です' :
+  '🔴 CRITICAL - 機能が正常に動作していません。緊急修正が必要です'}
+`;
+            
+            // レポートをテキストエリアに表示
+            const reportDiv = document.createElement('div');
+            reportDiv.innerHTML = `
+                <h3>📋 生成レポート</h3>
+                <textarea style="width: 100%; height: 300px; background: #1f2937; color: #e5e5e5; border: 1px solid #4b5563; border-radius: 4px; padding: 10px; font-family: monospace;" readonly>${report}</textarea>
+                <button class="btn btn-primary" onclick="copyReport(this.previousElementSibling)">📋 クリップボードにコピー</button>
+            `;
+            document.getElementById('testResults').appendChild(reportDiv);
+        }
+
+        function copyReport(textarea) {
+            textarea.select();
+            document.execCommand('copy');
+            alert('レポートがクリップボードにコピーされました！');
+        }
+
+        function resetTest() {
+            if (confirm('テスト結果をリセットしますか？')) {
+                document.querySelectorAll('.checklist li').forEach(item => {
+                    item.classList.remove('done');
+                });
+                document.getElementById('consoleOutput').textContent = '予期されるログ例:\\n🤖 すぐに対戦開始 - カスタムカードなし\\n🎯 InteractiveTutorial - ゲーム開始試行\\n🎯 DominionEngine.startGame呼び出し中...\\n🎯 ゲーム状態設定完了\\n🤖 [CPU名]のターンが開始されます\\n🤖 CPUターン実行開始...\\n🎯 CPUアクションフェーズ実行\\n💰 CPU購入フェーズ実行\\n🤖 CPUターン完了 - プレイヤーターンに戻ります';
+                updateTestResults();
+                testResults = { phases: {}, startTime: null, endTime: null };
+            }
+        }
+
+        // 初期化
+        updateTestResults();
+    </script>
+</body>
+</html>

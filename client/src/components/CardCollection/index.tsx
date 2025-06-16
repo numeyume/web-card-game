@@ -488,7 +488,7 @@ export function CardCollection({ onOpenCardBuilder }: CardCollectionProps) {
                 const updatedCard = {
                   name: formData.get('name') as string,
                   cost: parseInt(formData.get('cost') as string) || 0,
-                  type: formData.get('type') as string,
+                  type: formData.get('type') as 'Action' | 'Treasure' | 'Victory' | 'Curse' | 'Custom',
                   description: formData.get('description') as string,
                   effects: editingCard.effects || []
                 }

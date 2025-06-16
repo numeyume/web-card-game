@@ -38,8 +38,18 @@ export class DatabaseService {
     }
 
     try {
-      this.client = new MongoClient(this.connectionString);
-      await this.client.connect();
+      this.client = new MongoClient(this.connectionString, {
+        connectTimeoutMS: 5000,
+        serverSelectionTimeoutMS: 5000,
+        socketTimeoutMS: 5000
+      });
+      
+      // 5秒でタイムアウトする接続試行
+      await Promise.race([
+        this.client.connect(),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Connection timeout')), 5000))
+      ]);
+      
       this.db = this.client.db();
       this.isConnected = true;
       
@@ -53,6 +63,13 @@ export class DatabaseService {
       console.error('❌ MongoDB接続失敗:', error.message);
       console.log('📦 フォールバックモードで動作します');
       this.useFallback = true;
+      if (this.client) {
+        try {
+          await this.client.close();
+        } catch (closeError) {
+          // Ignore close errors
+        }
+      }
       return false;
     }
   }

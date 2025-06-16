@@ -21,7 +21,9 @@ export function CardCollection({ onOpenCardBuilder }: CardCollectionProps) {
     try {
       setLoading(true)
       const serverUrl = import.meta.env.VITE_SERVER_URL || 'http://localhost:3001'
-      const response = await fetch(`${serverUrl}/api/cards`)
+      const response = await fetch(`${serverUrl}/api/cards`, {
+        signal: AbortSignal.timeout(5000) // 5秒タイムアウト
+      })
       const data = await response.json()
 
       if (data.success) {
@@ -52,7 +54,8 @@ export function CardCollection({ onOpenCardBuilder }: CardCollectionProps) {
     try {
       const serverUrl = import.meta.env.VITE_SERVER_URL || 'http://localhost:3001'
       const response = await fetch(`${serverUrl}/api/cards/${cardId}`, {
-        method: 'DELETE'
+        method: 'DELETE',
+        signal: AbortSignal.timeout(5000) // 5秒タイムアウト
       })
       const data = await response.json()
 
@@ -79,7 +82,8 @@ export function CardCollection({ onOpenCardBuilder }: CardCollectionProps) {
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(updatedCard)
+        body: JSON.stringify(updatedCard),
+        signal: AbortSignal.timeout(5000) // 5秒タイムアウト
       })
       const data = await response.json()
 

@@ -136,12 +136,14 @@ export function CardBuilder() {
 
     setIsSaving(true)
     try {
-      const response = await fetch('http://localhost:3001/api/cards', {
+      const serverUrl = import.meta.env.VITE_SERVER_URL || 'http://localhost:3001'
+      const response = await fetch(`${serverUrl}/api/cards`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(cardData)
+        body: JSON.stringify(cardData),
+        signal: AbortSignal.timeout(10000) // 10秒タイムアウト
       })
 
       const result = await response.json()

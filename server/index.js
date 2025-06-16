@@ -656,7 +656,7 @@ async function startServer() {
   // Initialize database connection
   await databaseService.connect();
   
-  const PORT = process.env.PORT || 3003;
+  const PORT = process.env.PORT || 3001;
   server.listen(PORT, () => {
     console.log(`🚀 Server running on port ${PORT}`);
     console.log(`📡 Socket.IO enabled`);

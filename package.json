@@ -29,7 +29,8 @@
     "lint:server": "cd server && npm run lint",
     "validate": "node test-endgame.js && node test-voting-system.js",
     "start": "node index.cjs",
-    "deploy:setup": "echo 'See DEPLOYMENT.md for full deployment instructions'"
+    "deploy:setup": "echo 'See DEPLOYMENT.md for full deployment instructions'",
+    "vercel-build": "npm run build"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"

@@ -445,6 +445,7 @@ export function InteractiveTutorial({ onComplete, onExit, selectedCards, isCPUMo
   const cpuPlayer = gameState.players.find((p: any) => !p.isHuman)
   const currentPlayer = gameState.players[gameState.currentPlayerIndex]
   const isMyTurn = gameEngine.isCurrentPlayerHuman()
+  const isCPUTurn = !isMyTurn
 
   // ゲーム終了画面
   if (gameState.isGameEnded) {
@@ -857,50 +858,7 @@ export function InteractiveTutorial({ onComplete, onExit, selectedCards, isCPUMo
                     {isEmpty ? '売切れ' : `${pile.count}枚`}
                   </div>
                   
-                  {pile.card.victoryPoints && (
-                    <div className="text-xs text-yellow-400 mt-1">
-                      {pile.card.victoryPoints}VP
-                    </div>
-                  )}
-                  
-                  {pile.card.effects && pile.card.type === 'Treasure' && (
-                    <div className="text-xs text-yellow-400 mt-1">
-                      +{pile.card.effects.find((e: any) => e.type === 'gain_coin')?.value || 0}💰
-                    </div>
-                  )}
-                  
-                  {pile.card.effects && pile.card.type === 'Action' && (
-                    <div className="text-xs text-blue-400 mt-1 space-y-0.5">
-                      {pile.card.effects.map((effect: any, index: number) => (
-                        <div key={index} className="flex items-center justify-center space-x-1">
-                          {effect.type === 'draw' && (
-                            <>
-                              <span>+{effect.value}</span>
-                              <span>🃏</span>
-                            </>
-                          )}
-                          {effect.type === 'gain_action' && (
-                            <>
-                              <span>+{effect.value}</span>
-                              <span>⚡</span>
-                            </>
-                          )}
-                          {effect.type === 'gain_buy' && (
-                            <>
-                              <span>+{effect.value}</span>
-                              <span>🛍</span>
-                            </>
-                          )}
-                          {effect.type === 'gain_coin' && (
-                            <>
-                              <span>+{effect.value}</span>
-                              <span>💰</span>
-                            </>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                  {/* 簡素化: ツールチップで詳細を表示するため、カード内表示は最小限に */}
                 </div>
               </div>
             )

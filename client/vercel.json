@@ -1,16 +1,8 @@
 {
   "version": 2,
-  "name": "web-card-game-client",
+  "public": true,
+  "buildCommand": "npm run build",
   "outputDirectory": "dist",
-  "buildCommand": null,
-  "installCommand": null,
-  "framework": null,
-  "public": false,
-  "functions": {},
-  "routes": [
-    {
-      "src": "/(.*)",
-      "dest": "/index.html"
-    }
-  ]
+  "installCommand": "npm install",
+  "framework": "vite"
 }

@@ -55,7 +55,8 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
     newSocket.on('connect_error', (error) => {
       setConnectionStatus('error')
       console.error('Connection error:', error)
-      toast.error('サーバーへの接続に失敗しました')
+      // CPU対戦中はWebSocket接続エラーを非表示
+      // toast.error('サーバーへの接続に失敗しました')
     })
 
     newSocket.on('reconnect', (attemptNumber) => {

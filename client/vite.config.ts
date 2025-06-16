@@ -24,9 +24,9 @@ export default defineConfig({
     },
   },
   server: {
-    port: getAvailablePort(),
+    port: 5173,
     host: '0.0.0.0', // WSL対応：すべてのネットワークインターフェースでリスニング
-    strictPort: false, // ポート競合時に自動的に次のポートを試行
+    strictPort: true, // ポート固定
     open: false, // 自動ブラウザ起動を無効化（WSL環境対応）
     proxy: {
       '/api': {

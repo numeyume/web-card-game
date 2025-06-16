@@ -6,13 +6,13 @@
   "installCommand": "npm install && cd client && npm install",
   "functions": {
     "api/cards.js": {
-      "runtime": "@vercel/node"
+      "runtime": "@vercel/node@20.x"
     },
     "api/cards/[id].js": {
-      "runtime": "@vercel/node"
+      "runtime": "@vercel/node@20.x"
     },
     "api/health.js": {
-      "runtime": "@vercel/node"
+      "runtime": "@vercel/node@20.x"
     }
   },
   "rewrites": [

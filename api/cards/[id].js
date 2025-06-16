@@ -55,15 +55,23 @@ class DatabaseService {
 
   async updateCard(cardId, updateData) {
     if (this.useFallback) {
-      const card = this.fallbackStorage.cards.get(cardId) || 
-                   (typeof global !== 'undefined' && global.cardStorage ? global.cardStorage.get(cardId) : null);
+      let card = this.fallbackStorage.cards.get(cardId);
+      
+      // Check global storage if not found in local storage
+      if (!card && typeof global !== 'undefined' && global.cardStorage) {
+        card = global.cardStorage.get(cardId);
+      }
+      
       if (card) {
         const updatedCard = { ...card, ...updateData, updatedAt: new Date() };
+        
+        // Update both storages
         this.fallbackStorage.cards.set(cardId, updatedCard);
         if (typeof global !== 'undefined' && global.cardStorage) {
           global.cardStorage.set(cardId, updatedCard);
         }
-        return { success: true };
+        
+        return { success: true, card: updatedCard };
       }
       return { success: false, error: 'Card not found' };
     }
@@ -81,12 +89,21 @@ class DatabaseService {
 
   async deleteCard(cardId) {
     if (this.useFallback) {
-      const localDeleted = this.fallbackStorage.cards.delete(cardId);
-      let globalDeleted = false;
-      if (typeof global !== 'undefined' && global.cardStorage) {
-        globalDeleted = global.cardStorage.delete(cardId);
+      let deleted = false;
+      
+      // Delete from local storage
+      if (this.fallbackStorage.cards.has(cardId)) {
+        this.fallbackStorage.cards.delete(cardId);
+        deleted = true;
       }
-      return { success: localDeleted || globalDeleted };
+      
+      // Delete from global storage
+      if (typeof global !== 'undefined' && global.cardStorage && global.cardStorage.has(cardId)) {
+        global.cardStorage.delete(cardId);
+        deleted = true;
+      }
+      
+      return { success: deleted };
     }
 
     try {
@@ -215,11 +232,18 @@ export default async function handler(req, res) {
         updatedCard.victoryPoints = cardData.victoryPoints;
       }
       
-      await db.updateCard(id, updatedCard);
+      const updateResult = await db.updateCard(id, updatedCard);
+      
+      if (!updateResult.success) {
+        return res.status(404).json({
+          success: false,
+          error: updateResult.error || 'カードの更新に失敗しました'
+        });
+      }
       
       return res.json({
         success: true,
-        card: updatedCard,
+        card: updateResult.card || updatedCard,
         message: `カード「${updatedCard.name}」が正常に更新されました！`
       });
     }
@@ -229,14 +253,32 @@ export default async function handler(req, res) {
       const cards = await db.getCards();
       const cardToDelete = cards.find(card => card.id === id);
       
+      // デバッグ情報をログ出力
+      console.log('Delete request for ID:', id);
+      console.log('Available cards:', cards.map(c => ({ id: c.id, name: c.name })));
+      console.log('Card found:', !!cardToDelete);
+      
       if (!cardToDelete) {
         return res.status(404).json({
           success: false,
-          error: 'カードが見つかりません'
+          error: 'カードが見つかりません',
+          debug: {
+            requestedId: id,
+            availableIds: cards.map(c => c.id),
+            totalCards: cards.length
+          }
         });
       }
       
-      await db.deleteCard(id);
+      const deleteResult = await db.deleteCard(id);
+      
+      if (!deleteResult.success) {
+        return res.status(500).json({
+          success: false,
+          error: 'カードの削除に失敗しました',
+          debug: deleteResult
+        });
+      }
       
       return res.json({
         success: true,

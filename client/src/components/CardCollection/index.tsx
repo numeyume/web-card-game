@@ -63,7 +63,12 @@ export function CardCollection({ onOpenCardBuilder }: CardCollectionProps) {
         toast.success(data.message)
         fetchCards() // リストを再取得
       } else {
+        console.error('Delete failed:', data)
         toast.error(data.error || 'カードの削除に失敗しました')
+        // デバッグ情報があれば表示
+        if (data.debug) {
+          console.error('Debug info:', data.debug)
+        }
       }
     } catch (error) {
       console.error('Error deleting card:', error)

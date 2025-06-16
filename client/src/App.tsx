@@ -235,7 +235,11 @@ function App() {
                 <Lobby 
                   onJoinGame={() => setCurrentView('game')}
                   onStartDominion={() => setCurrentView('card-selector')}
-                  onStartDominionDirect={() => setCurrentView('dominion')}
+                  onStartDominionDirect={() => {
+                    console.log('🤖 すぐに対戦開始 - カスタムカードなし')
+                    setSelectedCards([]) // 明示的に空の配列を設定
+                    setCurrentView('dominion')
+                  }}
                   onOpenCardBuilder={() => setCurrentView('builder')}
                   onOpenCollection={() => setCurrentView('collection')}
                   onOpenTutorial={() => setCurrentView('tutorial')}

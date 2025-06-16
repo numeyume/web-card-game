@@ -51,11 +51,15 @@ export function InteractiveTutorial({ onComplete, onExit, selectedCards, isCPUMo
 
   // ゲーム開始関数（useCallbackで安定化）
   const startGame = useCallback(() => {
+    // selectedCardsが未定義の場合は空配列で初期化
+    const cardsToUse = selectedCards || []
+    
     console.log('🎯 InteractiveTutorial - ゲーム開始試行', { 
-      selectedCards, 
+      originalSelectedCards: selectedCards,
+      cardsToUse, 
       isCPUMode, 
       gameEngineExists: !!gameEngine,
-      cardCount: selectedCards?.length || 0
+      cardCount: cardsToUse.length
     })
     
     setIsLoading(true)
@@ -72,9 +76,13 @@ export function InteractiveTutorial({ onComplete, onExit, selectedCards, isCPUMo
       }
 
       const playerNames = isCPUMode ? ['プレイヤー', 'CPU'] : ['あなた', 'チュートリアルCPU']
-      console.log('🎯 DominionEngine.startGame呼び出し中...', { playerNames, selectedCards })
+      console.log('🎯 DominionEngine.startGame呼び出し中...', { 
+        playerNames, 
+        cardsToUse,
+        isCustomCards: cardsToUse.length > 0
+      })
       
-      const newGameState = gameEngine.startGame(playerNames, selectedCards)
+      const newGameState = gameEngine.startGame(playerNames, cardsToUse)
       
       if (!newGameState) {
         throw new Error('ゲーム状態の初期化に失敗しました')
@@ -85,7 +93,8 @@ export function InteractiveTutorial({ onComplete, onExit, selectedCards, isCPUMo
         playerCount: newGameState.players?.length,
         currentPlayer: newGameState.players?.[newGameState.currentPlayerIndex]?.name,
         phase: newGameState.phase,
-        turn: newGameState.turn
+        turn: newGameState.turn,
+        supplyKeys: Object.keys(newGameState.supply)
       })
       
       clearTimeout(timeout)
@@ -93,7 +102,11 @@ export function InteractiveTutorial({ onComplete, onExit, selectedCards, isCPUMo
       setIsLoading(false)
       
       if (isCPUMode) {
-        toast.success('🎯 CPU対戦が開始されました！')
+        if (cardsToUse.length > 0) {
+          toast.success(`🎯 CPU対戦が開始されました！（カスタムカード${cardsToUse.length}枚使用）`)
+        } else {
+          toast.success('🎯 CPU対戦が開始されました！（標準ドミニオン）')
+        }
       } else {
         toast.success('📚 チュートリアルが開始されました！')
       }
@@ -102,7 +115,8 @@ export function InteractiveTutorial({ onComplete, onExit, selectedCards, isCPUMo
         error,
         message: error instanceof Error ? error.message : '不明なエラー',
         stack: error instanceof Error ? error.stack : undefined,
-        selectedCards,
+        originalSelectedCards: selectedCards,
+        cardsToUse,
         isCPUMode,
         gameEngine: !!gameEngine
       })
@@ -350,7 +364,7 @@ export function InteractiveTutorial({ onComplete, onExit, selectedCards, isCPUMo
             <div>
               <div className="space-y-1">
                 <div>モード: <span className="font-mono">{isCPUMode ? 'CPU対戦' : 'チュートリアル'}</span></div>
-                <div>選択カード数: <span className="font-mono">{selectedCards?.length || 0}</span></div>
+                <div>選択カード数: <span className="font-mono">{selectedCards?.length || 0}</span> {(selectedCards?.length || 0) === 0 && <span className="text-green-400">（標準ドミニオン）</span>}</div>
                 <div>ゲームエンジン: <span className="font-mono">{gameEngine ? '✅ OK' : '❌ NG'}</span></div>
                 <div>ゲーム状態: <span className="font-mono">{gameState ? '✅ 初期化済み' : '❌ 未初期化'}</span></div>
               </div>

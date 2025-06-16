@@ -20,7 +20,7 @@ interface LobbyProps {
   onOpenTutorial: () => void
 }
 
-export function Lobby({ onJoinGame: _onJoinGame, onStartDominion, onStartDominionDirect, onOpenCardBuilder, onOpenTutorial }: LobbyProps) {
+export function Lobby({ onJoinGame: _onJoinGame, onStartDominion, onStartDominionDirect, onOpenCardBuilder, onOpenCollection, onOpenTutorial }: LobbyProps) {
   const { connectionStatus } = useWebSocket()
   // const [_rooms] = useState<Room[]>([])
   // const [loading] = useState(false)
@@ -243,6 +243,22 @@ export function Lobby({ onJoinGame: _onJoinGame, onStartDominion, onStartDominio
             </button>
           </div>
         </div>
+
+        <div className="card border-2 border-purple-500/30">
+          <div className="text-center py-6">
+            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-purple-500/10 flex items-center justify-center">
+              <span className="text-2xl">📚</span>
+            </div>
+            <h3 className="text-lg font-bold mb-2 text-purple-400">コレクション</h3>
+            <p className="text-sm text-zinc-400 mb-4">作成したカードを管理</p>
+            <button 
+              onClick={onOpenCollection}
+              className="button-secondary w-full"
+            >
+              📖 コレクション
+            </button>
+          </div>
+        </div>
       </div>
 
 
@@ -278,7 +294,8 @@ export function Lobby({ onJoinGame: _onJoinGame, onStartDominion, onStartDominio
         <div className="flex justify-center space-x-6">
           <span>🎮 CPU対戦モード稼働中</span>
           <span>🎨 カード作成機能利用可能</span>
-          <span>📚 チュートリアル完備</span>
+          <span>📚 コレクション管理機能搭載</span>
+          <span>📖 チュートリアル完備</span>
         </div>
       </div>
     </div>

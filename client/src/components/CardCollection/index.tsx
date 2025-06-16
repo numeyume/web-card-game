@@ -11,14 +11,15 @@ export function CardCollection({}: CardCollectionProps) {
   const [selectedType, setSelectedType] = useState<string>('all')
   const [sortBy, setSortBy] = useState<'name' | 'cost' | 'createdAt'>('createdAt')
   const [selectedCard, setSelectedCard] = useState<Card | null>(null)
-  // const [editingCard] = useState<Card | null>(null)
-  // const [showDeleteConfirm] = useState<string | null>(null)
+  const [editingCard, setEditingCard] = useState<Card | null>(null)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null)
 
   // カード一覧を取得
   const fetchCards = async () => {
     try {
       setLoading(true)
-      const response = await fetch('http://localhost:3001/api/cards')
+      const serverUrl = import.meta.env.VITE_SERVER_URL || 'http://localhost:3001'
+      const response = await fetch(`${serverUrl}/api/cards`)
       const data = await response.json()
 
       if (data.success) {
@@ -45,10 +46,10 @@ export function CardCollection({}: CardCollectionProps) {
   }, [])
 
   // カード削除
-  /*
-  const deleteCard = async (_cardId: string) => {
+  const deleteCard = async (cardId: string) => {
     try {
-      const response = await fetch(`http://localhost:3001/api/cards/${cardId}`, {
+      const serverUrl = import.meta.env.VITE_SERVER_URL || 'http://localhost:3001'
+      const response = await fetch(`${serverUrl}/api/cards/${cardId}`, {
         method: 'DELETE'
       })
       const data = await response.json()
@@ -66,13 +67,12 @@ export function CardCollection({}: CardCollectionProps) {
       setShowDeleteConfirm(null)
     }
   }
-  */
 
   // カード更新
-  /*
-  const updateCard = async (_cardId: string, _updatedCard: Partial<Card>) => {
+  const updateCard = async (cardId: string, updatedCard: Partial<Card>) => {
     try {
-      const response = await fetch(`http://localhost:3001/api/cards/${cardId}`, {
+      const serverUrl = import.meta.env.VITE_SERVER_URL || 'http://localhost:3001'
+      const response = await fetch(`${serverUrl}/api/cards/${cardId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json'
@@ -93,7 +93,6 @@ export function CardCollection({}: CardCollectionProps) {
       toast.error('サーバーに接続できませんでした')
     }
   }
-  */
 
   // カードフィルタリング
   const filteredCards = cards.filter(card => {
@@ -379,6 +378,30 @@ export function CardCollection({}: CardCollectionProps) {
                 </div>
               )}
 
+              {/* アクションボタン */}
+              <div className="border-t border-zinc-700 pt-4 mb-4">
+                <div className="flex justify-center space-x-4">
+                  <button
+                    onClick={() => {
+                      setEditingCard(selectedCard)
+                      setSelectedCard(null)
+                    }}
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                  >
+                    ✏️ 編集
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowDeleteConfirm(selectedCard.id)
+                      setSelectedCard(null)
+                    }}
+                    className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+                  >
+                    🗑️ 削除
+                  </button>
+                </div>
+              </div>
+
               {/* メタデータ */}
               <div className="border-t border-zinc-700 pt-4">
                 <div className="grid grid-cols-2 gap-4 text-sm text-zinc-400">
@@ -400,6 +423,147 @@ export function CardCollection({}: CardCollectionProps) {
                   </div>
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 削除確認モーダル */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
+          <div className="bg-zinc-800 rounded-lg border border-red-500/50 max-w-md w-full">
+            <div className="p-6">
+              <div className="text-center mb-6">
+                <div className="text-4xl mb-4">⚠️</div>
+                <h3 className="text-xl font-bold text-red-400 mb-2">カードを削除しますか？</h3>
+                <p className="text-zinc-300">
+                  この操作は取り消せません。削除されたカードは復元できません。
+                </p>
+              </div>
+              <div className="flex space-x-3">
+                <button
+                  onClick={() => setShowDeleteConfirm(null)}
+                  className="flex-1 px-4 py-2 bg-zinc-600 hover:bg-zinc-700 text-white rounded-lg transition-colors"
+                >
+                  キャンセル
+                </button>
+                <button
+                  onClick={() => deleteCard(showDeleteConfirm)}
+                  className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+                >
+                  削除する
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 編集モーダル */}
+      {editingCard && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
+          <div className="bg-zinc-800 rounded-lg border border-zinc-600 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold">✏️ カード編集</h2>
+                <button
+                  onClick={() => setEditingCard(null)}
+                  className="text-zinc-400 hover:text-white transition-colors"
+                >
+                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              
+              <form onSubmit={(e) => {
+                e.preventDefault()
+                const formData = new FormData(e.currentTarget)
+                const updatedCard = {
+                  name: formData.get('name') as string,
+                  cost: parseInt(formData.get('cost') as string) || 0,
+                  type: formData.get('type') as string,
+                  description: formData.get('description') as string,
+                  effects: editingCard.effects || []
+                }
+                updateCard(editingCard.id, updatedCard)
+              }}>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-zinc-300 mb-2">
+                      カード名
+                    </label>
+                    <input
+                      type="text"
+                      name="name"
+                      defaultValue={editingCard.name}
+                      required
+                      className="w-full px-3 py-2 bg-zinc-700 border border-zinc-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-zinc-300 mb-2">
+                        コスト
+                      </label>
+                      <input
+                        type="number"
+                        name="cost"
+                        defaultValue={editingCard.cost || 0}
+                        min="0"
+                        max="20"
+                        className="w-full px-3 py-2 bg-zinc-700 border border-zinc-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-zinc-300 mb-2">
+                        タイプ
+                      </label>
+                      <select
+                        name="type"
+                        defaultValue={editingCard.type}
+                        className="w-full px-3 py-2 bg-zinc-700 border border-zinc-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      >
+                        <option value="Action">アクション</option>
+                        <option value="Treasure">財宝</option>
+                        <option value="Victory">勝利点</option>
+                        <option value="Curse">呪い</option>
+                        <option value="Custom">カスタム</option>
+                      </select>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-zinc-300 mb-2">
+                      説明
+                    </label>
+                    <textarea
+                      name="description"
+                      defaultValue={editingCard.description}
+                      rows={3}
+                      className="w-full px-3 py-2 bg-zinc-700 border border-zinc-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  
+                  <div className="flex space-x-3 pt-4">
+                    <button
+                      type="button"
+                      onClick={() => setEditingCard(null)}
+                      className="flex-1 px-4 py-2 bg-zinc-600 hover:bg-zinc-700 text-white rounded-lg transition-colors"
+                    >
+                      キャンセル
+                    </button>
+                    <button
+                      type="submit"
+                      className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                    >
+                      保存
+                    </button>
+                  </div>
+                </div>
+              </form>
             </div>
           </div>
         </div>

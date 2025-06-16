@@ -2,19 +2,7 @@
   "version": 2,
   "buildCommand": "cd client && npm run build",
   "outputDirectory": "client/dist",
-  "framework": null,
   "installCommand": "npm install && cd client && npm install",
-  "functions": {
-    "api/cards.js": {
-      "runtime": "@vercel/node@20.x"
-    },
-    "api/cards/[id].js": {
-      "runtime": "@vercel/node@20.x"
-    },
-    "api/health.js": {
-      "runtime": "@vercel/node@20.x"
-    }
-  },
   "rewrites": [
     {
       "source": "/api/cards",

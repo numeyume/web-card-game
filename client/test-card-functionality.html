@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Card Functionality Test Script</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #e0e0e0;
+        }
+        .test-section {
+            background: #2a2a2a;
+            border: 1px solid #3a3a3a;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .test-step {
+            background: #333;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 6px;
+            border-left: 4px solid #4a9eff;
+        }
+        .code-block {
+            background: #1e1e1e;
+            padding: 15px;
+            border-radius: 4px;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            overflow-x: auto;
+            margin: 10px 0;
+            border: 1px solid #444;
+        }
+        .warning {
+            background: #4a3020;
+            border: 1px solid #f59e0b;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 10px 0;
+        }
+        .success {
+            background: #1e3a20;
+            border: 1px solid #10b981;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 10px 0;
+        }
+        .error {
+            background: #3a1e1e;
+            border: 1px solid #ef4444;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 10px 0;
+        }
+        h1, h2, h3 {
+            color: #fff;
+        }
+        button {
+            background: #4a9eff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+        }
+        button:hover {
+            background: #3a8eef;
+        }
+        .status-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 5px;
+        }
+        .status-success { background: #10b981; }
+        .status-error { background: #ef4444; }
+        .status-warning { background: #f59e0b; }
+        .result-log {
+            background: #1e1e1e;
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 20px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .log-entry {
+            padding: 5px 0;
+            border-bottom: 1px solid #333;
+        }
+        .log-time {
+            color: #888;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Web Card Game - Card Functionality Test Script</h1>
+    
+    <div class="warning">
+        <strong>⚠️ テスト前の確認事項:</strong>
+        <ul>
+            <li>ブラウザの開発者ツール (F12) を開いてConsoleタブを表示してください</li>
+            <li>テストサイト: <a href="http://192.168.23.44:5173" target="_blank" style="color: #4a9eff;">http://192.168.23.44:5173</a></li>
+            <li>このページは別タブで開いたまま、テストサイトと行き来してください</li>
+        </ul>
+    </div>
+
+    <div class="test-section">
+        <h2>📋 Test 1: カード作成機能のテスト</h2>
+        
+        <div class="test-step">
+            <h3>Step 1.1: カードビルダーへの遷移</h3>
+            <ol>
+                <li>ロビー画面で「カード作成」ボタンをクリック</li>
+                <li>カードビルダー画面が表示されることを確認</li>
+            </ol>
+            <button onclick="copyToClipboard('console.log(\"Card Builder loaded:\", window.location.pathname)')">
+                📋 Console確認コードをコピー
+            </button>
+        </div>
+
+        <div class="test-step">
+            <h3>Step 1.2: テストカードの作成</h3>
+            <p>以下の情報でカードを作成:</p>
+            <ul>
+                <li><strong>カード名:</strong> テストカード</li>
+                <li><strong>コスト:</strong> 3</li>
+                <li><strong>効果:</strong> +1 カードドロー</li>
+                <li><strong>説明文:</strong> テスト用のカードです</li>
+            </ul>
+            <button onclick="copyToClipboard('localStorage.getItem(\"customCards\")')">
+                📋 LocalStorage確認コードをコピー
+            </button>
+        </div>
+
+        <div class="test-step">
+            <h3>Step 1.3: 保存時の動作確認</h3>
+            <p>「カードを保存」ボタンをクリック後、以下を確認:</p>
+            <div class="code-block">
+// Console で以下のコマンドを実行して確認
+// 1. LocalStorageの内容確認
+console.log("LocalStorage Cards:", JSON.parse(localStorage.getItem("customCards") || "[]"));
+
+// 2. ネットワークエラーの確認
+console.log("Network Errors:", performance.getEntriesByType("resource").filter(r => r.name.includes("/api/cards")));
+
+// 3. 保存されたカードの詳細
+const cards = JSON.parse(localStorage.getItem("customCards") || "[]");
+console.table(cards);
+            </div>
+            <button onclick="runLocalStorageCheck()">🔍 LocalStorage自動チェック</button>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>📚 Test 2: コレクション機能のテスト</h2>
+        
+        <div class="test-step">
+            <h3>Step 2.1: コレクション画面への遷移</h3>
+            <ol>
+                <li>ロビーに戻る</li>
+                <li>「コレクション」ボタンをクリック</li>
+                <li>作成したカードが表示されることを確認</li>
+            </ol>
+            <button onclick="checkCollectionLoad()">🔍 コレクション読み込みチェック</button>
+        </div>
+
+        <div class="test-step">
+            <h3>Step 2.2: LocalStorageフォールバックの確認</h3>
+            <div class="code-block">
+// サーバー接続失敗時のフォールバック動作を確認
+// Console で以下を実行:
+
+// 1. 現在のLocalStorageカード数
+const localCards = JSON.parse(localStorage.getItem("customCards") || "[]");
+console.log(`LocalStorage内のカード数: ${localCards.length}`);
+
+// 2. カードIDの確認（local_で始まるか）
+localCards.forEach(card => {
+    console.log(`Card: ${card.name}, ID: ${card.id}, IsLocal: ${card.id.startsWith("local_")}`);
+});
+            </div>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>🎮 Test 3: カード選択機能のテスト</h2>
+        
+        <div class="test-step">
+            <h3>Step 3.1: カード選択画面への遷移</h3>
+            <ol>
+                <li>ロビーに戻る</li>
+                <li>「カード選択して対戦」ボタンをクリック</li>
+                <li>作成したカードが選択可能リストに表示されることを確認</li>
+            </ol>
+        </div>
+
+        <div class="test-step">
+            <h3>Step 3.2: カード選択の動作確認</h3>
+            <ol>
+                <li>作成したカードをクリックして選択</li>
+                <li>選択状態（青い枠）が表示されることを確認</li>
+                <li>最大3枚まで選択可能なことを確認</li>
+            </ol>
+            <button onclick="testCardSelection()">🎯 選択機能テスト</button>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>🔍 Test 4: エラーハンドリングの確認</h2>
+        
+        <div class="test-step">
+            <h3>Step 4.1: ネットワークエラー時の動作</h3>
+            <div class="code-block">
+// Console でネットワークエラーを確認
+// 以下のコマンドでエラーログを抽出:
+
+// 1. コンソールエラーの確認
+console.log("=== Error Logs ===");
+// ※ 実際のエラーはConsoleタブで赤文字で表示されます
+
+// 2. LocalStorageフォールバックの動作確認
+console.log("LocalStorage fallback active:", 
+    JSON.parse(localStorage.getItem("customCards") || "[]").length > 0
+);
+            </div>
+        </div>
+
+        <div class="test-step">
+            <h3>Step 4.2: Toast通知の確認</h3>
+            <p>以下の場面でToast通知が表示されるか確認:</p>
+            <ul>
+                <li>✅ カード保存成功時</li>
+                <li>❌ バリデーションエラー時</li>
+                <li>⚠️ サーバー接続失敗時</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>📊 診断結果サマリー</h2>
+        <div id="result-summary" class="result-log">
+            <div class="log-entry">
+                <span class="log-time">[待機中]</span> テストを開始してください...
+            </div>
+        </div>
+        
+        <button onclick="runFullDiagnostics()">🚀 完全診断を実行</button>
+        <button onclick="clearLocalStorage()">🗑️ LocalStorageをクリア</button>
+        <button onclick="createTestCards()">🎨 テストカードを生成</button>
+    </div>
+
+    <script>
+        // ログ記録用
+        const logResults = [];
+        
+        function addLog(message, status = 'info') {
+            const time = new Date().toLocaleTimeString();
+            const statusIcon = status === 'success' ? '✅' : status === 'error' ? '❌' : 'ℹ️';
+            const entry = `<div class="log-entry">
+                <span class="log-time">[${time}]</span> ${statusIcon} ${message}
+            </div>`;
+            
+            const logContainer = document.getElementById('result-summary');
+            logContainer.innerHTML += entry;
+            logContainer.scrollTop = logContainer.scrollHeight;
+            
+            logResults.push({ time, status, message });
+        }
+
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                alert('コードをクリップボードにコピーしました！');
+            });
+        }
+
+        function runLocalStorageCheck() {
+            try {
+                const cards = JSON.parse(localStorage.getItem('customCards') || '[]');
+                addLog(`LocalStorageカード数: ${cards.length}`, cards.length > 0 ? 'success' : 'warning');
+                
+                if (cards.length > 0) {
+                    cards.forEach(card => {
+                        addLog(`カード発見: ${card.name} (ID: ${card.id})`, 'success');
+                    });
+                }
+                
+                console.log('LocalStorage Cards:', cards);
+                console.table(cards);
+            } catch (error) {
+                addLog(`LocalStorageエラー: ${error.message}`, 'error');
+            }
+        }
+
+        function checkCollectionLoad() {
+            // サーバーAPIの状態を確認
+            fetch('http://localhost:3001/api/cards')
+                .then(response => {
+                    addLog(`サーバー応答: ${response.status}`, response.ok ? 'success' : 'error');
+                    return response.json();
+                })
+                .then(data => {
+                    addLog(`サーバーカード数: ${data.cards?.length || 0}`, 'info');
+                })
+                .catch(error => {
+                    addLog(`サーバー接続失敗: ${error.message}`, 'error');
+                    addLog('LocalStorageフォールバックが有効になります', 'warning');
+                });
+            
+            // LocalStorageも確認
+            runLocalStorageCheck();
+        }
+
+        function testCardSelection() {
+            const cards = JSON.parse(localStorage.getItem('customCards') || '[]');
+            addLog(`選択可能なカード数: ${cards.length}`, 'info');
+            
+            if (cards.length === 0) {
+                addLog('選択可能なカードがありません', 'warning');
+                addLog('まずカードを作成してください', 'info');
+            } else {
+                addLog('カード選択画面で以下のカードが表示されるはずです:', 'success');
+                cards.forEach(card => {
+                    addLog(`- ${card.name} (コスト: ${card.cost})`, 'info');
+                });
+            }
+        }
+
+        function runFullDiagnostics() {
+            addLog('=== 完全診断開始 ===', 'info');
+            
+            // 1. LocalStorage状態
+            const cards = JSON.parse(localStorage.getItem('customCards') || '[]');
+            addLog(`LocalStorageカード数: ${cards.length}`, cards.length > 0 ? 'success' : 'warning');
+            
+            // 2. サーバー接続テスト
+            Promise.all([
+                fetch('http://localhost:3001/api/cards').catch(e => ({ error: e })),
+                fetch('http://192.168.23.44:3001/api/cards').catch(e => ({ error: e }))
+            ]).then(results => {
+                results.forEach((result, index) => {
+                    const url = index === 0 ? 'localhost:3001' : '192.168.23.44:3001';
+                    if (result.error) {
+                        addLog(`${url} 接続失敗`, 'error');
+                    } else {
+                        addLog(`${url} 接続成功`, 'success');
+                    }
+                });
+            });
+            
+            // 3. カード詳細
+            if (cards.length > 0) {
+                addLog('保存されているカード:', 'info');
+                cards.forEach(card => {
+                    const isLocal = card.id.startsWith('local_');
+                    addLog(`${card.name} - ${isLocal ? 'ローカル保存' : 'サーバー保存'}`, 'info');
+                });
+            }
+            
+            addLog('=== 診断完了 ===', 'success');
+        }
+
+        function clearLocalStorage() {
+            if (confirm('LocalStorageの全カードを削除しますか？')) {
+                localStorage.removeItem('customCards');
+                addLog('LocalStorageをクリアしました', 'success');
+                runLocalStorageCheck();
+            }
+        }
+
+        function createTestCards() {
+            const testCards = [
+                {
+                    id: `local_${Date.now()}_1`,
+                    name: 'テストドローカード',
+                    cost: 2,
+                    type: 'Action',
+                    effects: [{ type: 'draw', value: 2, target: 'self' }],
+                    description: '+2 カードドロー',
+                    createdAt: new Date().toISOString()
+                },
+                {
+                    id: `local_${Date.now()}_2`,
+                    name: 'テスト財宝カード',
+                    cost: 0,
+                    type: 'Treasure',
+                    effects: [{ type: 'gain_coin', value: 3, target: 'self' }],
+                    description: '+3 コイン',
+                    createdAt: new Date().toISOString()
+                },
+                {
+                    id: `local_${Date.now()}_3`,
+                    name: 'テストアクションカード',
+                    cost: 4,
+                    type: 'Action',
+                    effects: [
+                        { type: 'draw', value: 1, target: 'self' },
+                        { type: 'gain_action', value: 2, target: 'self' }
+                    ],
+                    description: '+1 カード, +2 アクション',
+                    createdAt: new Date().toISOString()
+                }
+            ];
+            
+            const existingCards = JSON.parse(localStorage.getItem('customCards') || '[]');
+            const updatedCards = [...existingCards, ...testCards];
+            localStorage.setItem('customCards', JSON.stringify(updatedCards));
+            
+            addLog(`${testCards.length}枚のテストカードを作成しました`, 'success');
+            runLocalStorageCheck();
+        }
+
+        // 初期化
+        window.addEventListener('load', () => {
+            addLog('テストツール準備完了', 'success');
+            addLog('ブラウザの開発者ツール (F12) を開いてConsoleタブを確認してください', 'info');
+        });
+    </script>
+</body>
+</html>

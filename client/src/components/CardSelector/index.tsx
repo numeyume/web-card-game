@@ -17,34 +17,46 @@ export function CardSelector({ onStartGame, onCancel }: CardSelectorProps) {
   const fetchCards = async () => {
     try {
       setLoading(true)
-      const serverUrl = import.meta.env.VITE_SERVER_URL || 'http://localhost:3001'
-      console.log('🔄 CardSelector: カード取得開始', { serverUrl })
       
-      const response = await fetch(`${serverUrl}/api/cards`, {
-        signal: AbortSignal.timeout(10000) // 10秒タイムアウト
-      })
+      // サーバーから取得を試行（Viteプロキシ経由）
+      console.log('🔄 CardSelector: カード取得開始（プロキシ経由）')
       
-      console.log('🔄 CardSelector: API レスポンス受信', { 
-        status: response.status, 
-        ok: response.ok 
-      })
-      
-      const data = await response.json()
-      console.log('🔄 CardSelector: レスポンスデータ', data)
+      try {
+        const response = await fetch('/api/cards', {
+          signal: AbortSignal.timeout(3000) // 3秒タイムアウトに短縮
+        })
+        
+        console.log('🔄 CardSelector: API レスポンス受信', { 
+          status: response.status, 
+          ok: response.ok 
+        })
+        
+        const data = await response.json()
+        console.log('🔄 CardSelector: レスポンスデータ', data)
 
-      if (data.success) {
-        // すべてのカードを表示（アクションカードの制限を解除）
-        const allCards = data.cards || []
-        console.log('🔄 CardSelector: カード取得成功', { cardCount: allCards.length })
-        setCards(allCards)
-      } else {
-        console.error('❌ CardSelector: API エラー', data)
-        toast.error('カードの取得に失敗しました')
-        setCards([])
+        if (data.success) {
+          // すべてのカードを表示（アクションカードの制限を解除）
+          const allCards = data.cards || []
+          console.log('🔄 CardSelector: カード取得成功', { cardCount: allCards.length })
+          setCards(allCards)
+          return
+        } else {
+          throw new Error('サーバーからの取得に失敗')
+        }
+      } catch (serverError) {
+        console.warn('❌ CardSelector: サーバー接続失敗、ローカルストレージから読み込みます:', serverError)
+        
+        // ローカルストレージからカードを取得（フォールバック）
+        const localCards = JSON.parse(localStorage.getItem('customCards') || '[]')
+        console.log('🔄 CardSelector: ローカルカード取得', { cardCount: localCards.length })
+        setCards(localCards)
+        
+        if (localCards.length === 0) {
+          toast.info('作成されたカードがありません。まずカードを作成してください。')
+        }
       }
     } catch (error) {
-      console.error('❌ CardSelector: 接続エラー:', error)
-      toast.error('サーバーに接続できませんでした: ' + (error?.message || '不明なエラー'))
+      console.error('❌ CardSelector: エラー:', error)
       setCards([])
     } finally {
       setLoading(false)

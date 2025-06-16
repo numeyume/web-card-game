@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>カード作成テスト</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; }
+        button { margin: 5px; padding: 10px 15px; background: #007bff; color: white; border: none; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        .log { background: #f8f9fa; border: 1px solid #dee2e6; padding: 10px; margin: 10px 0; height: 200px; overflow-y: auto; }
+        .success { color: green; }
+        .error { color: red; }
+        .warning { color: orange; }
+    </style>
+</head>
+<body>
+    <h1>🃏 カード作成機能テスト</h1>
+    
+    <div class="test-section">
+        <h2>1. ローカルストレージの状態確認</h2>
+        <button onclick="checkLocalStorage()">ローカルストレージ確認</button>
+        <button onclick="clearLocalStorage()">ローカルストレージクリア</button>
+        <div id="localStorage-status"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>2. テストカード作成</h2>
+        <button onclick="createTestCard()">テストカードを直接作成</button>
+        <button onclick="createMultipleCards()">複数テストカード作成</button>
+        <div id="card-creation-status"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>3. アプリケーションテスト手順</h2>
+        <ol>
+            <li><a href="http://192.168.23.44:5173" target="_blank">Web Card Game を開く</a></li>
+            <li>「カード作成」ボタンをクリック</li>
+            <li>以下の内容でカードを作成:
+                <ul>
+                    <li>名前: テストカード</li>
+                    <li>コスト: 3</li>
+                    <li>効果: +1カード</li>
+                    <li>説明: テスト用のカードです</li>
+                </ul>
+            </li>
+            <li>「保存」ボタンをクリック</li>
+            <li>ブラウザコンソールのメッセージを確認</li>
+            <li>このページで「ローカルストレージ確認」をクリック</li>
+        </ol>
+    </div>
+
+    <div class="test-section">
+        <h2>4. デバッグログ</h2>
+        <div id="debug-log" class="log"></div>
+        <button onclick="clearLog()">ログクリア</button>
+    </div>
+
+    <script>
+        function log(message, type = 'info') {
+            const logDiv = document.getElementById('debug-log');
+            const timestamp = new Date().toLocaleTimeString();
+            const className = type === 'error' ? 'error' : type === 'warning' ? 'warning' : type === 'success' ? 'success' : '';
+            logDiv.innerHTML += `<div class="${className}">[${timestamp}] ${message}</div>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        function checkLocalStorage() {
+            try {
+                const cards = JSON.parse(localStorage.getItem('customCards') || '[]');
+                const statusDiv = document.getElementById('localStorage-status');
+                
+                log(`ローカルストレージ確認: ${cards.length}枚のカードが保存されています`, 'success');
+                
+                statusDiv.innerHTML = `
+                    <h3>保存されているカード: ${cards.length}枚</h3>
+                    ${cards.map((card, index) => `
+                        <div style="margin: 5px 0; padding: 5px; border: 1px solid #ddd;">
+                            <strong>${index + 1}. ${card.name}</strong> 
+                            (ID: ${card.id}, コスト: ${card.cost}, タイプ: ${card.type})
+                            <br>説明: ${card.description}
+                            ${card.effects ? `<br>効果: ${JSON.stringify(card.effects)}` : ''}
+                        </div>
+                    `).join('')}
+                `;
+            } catch (error) {
+                log(`ローカルストレージエラー: ${error.message}`, 'error');
+            }
+        }
+
+        function clearLocalStorage() {
+            localStorage.removeItem('customCards');
+            log('ローカルストレージをクリアしました', 'warning');
+            checkLocalStorage();
+        }
+
+        function createTestCard() {
+            const testCard = {
+                id: `test_${Date.now()}`,
+                name: 'テストカード',
+                cost: 3,
+                type: 'Action',
+                effects: [{ type: 'draw', value: 1 }],
+                description: '+1カード',
+                createdAt: new Date().toISOString()
+            };
+
+            try {
+                const existingCards = JSON.parse(localStorage.getItem('customCards') || '[]');
+                const updatedCards = [...existingCards, testCard];
+                localStorage.setItem('customCards', JSON.stringify(updatedCards));
+                
+                log(`テストカード「${testCard.name}」を作成しました`, 'success');
+                checkLocalStorage();
+                
+                document.getElementById('card-creation-status').innerHTML = 
+                    `<p class="success">✅ テストカード作成完了: ${testCard.name}</p>`;
+            } catch (error) {
+                log(`テストカード作成エラー: ${error.message}`, 'error');
+            }
+        }
+
+        function createMultipleCards() {
+            const testCards = [
+                {
+                    id: `multi_1_${Date.now()}`,
+                    name: '強力な村',
+                    cost: 4,
+                    type: 'Action',
+                    effects: [
+                        { type: 'draw', value: 2 },
+                        { type: 'gain_action', value: 2 }
+                    ],
+                    description: '+2カード、+2アクション',
+                    createdAt: new Date().toISOString()
+                },
+                {
+                    id: `multi_2_${Date.now()}`,
+                    name: '金の山',
+                    cost: 6,
+                    type: 'Treasure',
+                    effects: [{ type: 'gain_coin', value: 4 }],
+                    description: '+4コイン',
+                    createdAt: new Date().toISOString()
+                },
+                {
+                    id: `multi_3_${Date.now()}`,
+                    name: '勝利の城',
+                    cost: 8,
+                    type: 'Victory',
+                    victoryPoints: 4,
+                    description: '4勝利点',
+                    createdAt: new Date().toISOString()
+                }
+            ];
+
+            try {
+                const existingCards = JSON.parse(localStorage.getItem('customCards') || '[]');
+                const updatedCards = [...existingCards, ...testCards];
+                localStorage.setItem('customCards', JSON.stringify(updatedCards));
+                
+                log(`${testCards.length}枚のテストカードを作成しました`, 'success');
+                checkLocalStorage();
+                
+                document.getElementById('card-creation-status').innerHTML = 
+                    `<p class="success">✅ ${testCards.length}枚のテストカード作成完了</p>`;
+            } catch (error) {
+                log(`複数テストカード作成エラー: ${error.message}`, 'error');
+            }
+        }
+
+        function clearLog() {
+            document.getElementById('debug-log').innerHTML = '';
+        }
+
+        // 初期化
+        window.onload = function() {
+            log('カード作成テストツール初期化完了', 'success');
+            checkLocalStorage();
+        };
+    </script>
+</body>
+</html>

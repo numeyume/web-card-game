@@ -20,21 +20,33 @@ export function CardCollection({ onOpenCardBuilder }: CardCollectionProps) {
   const fetchCards = async () => {
     try {
       setLoading(true)
-      const serverUrl = import.meta.env.VITE_SERVER_URL || 'http://localhost:3001'
-      const response = await fetch(`${serverUrl}/api/cards`, {
-        signal: AbortSignal.timeout(5000) // 5秒タイムアウト
-      })
-      const data = await response.json()
+      
+      // まずサーバーから取得を試行（Viteプロキシ経由）
+      try {
+        const response = await fetch('/api/cards', {
+          signal: AbortSignal.timeout(3000) // 3秒タイムアウトに短縮
+        })
+        const data = await response.json()
 
-      if (data.success) {
-        setCards(data.cards || [])
-      } else {
-        toast.error('カードの取得に失敗しました')
-        setCards([])
+        if (data.success) {
+          setCards(data.cards || [])
+          return
+        } else {
+          throw new Error('サーバーからの取得に失敗')
+        }
+      } catch (serverError) {
+        console.warn('サーバーから取得失敗、ローカルストレージから読み込みます:', serverError)
+        
+        // ローカルストレージからカードを取得（フォールバック）
+        const localCards = JSON.parse(localStorage.getItem('customCards') || '[]')
+        setCards(localCards)
+        
+        if (localCards.length > 0) {
+          console.log(`ローカルから${localCards.length}枚のカードを読み込みました`)
+        }
       }
     } catch (error) {
       console.error('Error fetching cards:', error)
-      toast.error('サーバーに接続できませんでした')
       setCards([])
     } finally {
       setLoading(false)
@@ -52,27 +64,36 @@ export function CardCollection({ onOpenCardBuilder }: CardCollectionProps) {
   // カード削除
   const deleteCard = async (cardId: string) => {
     try {
-      const serverUrl = import.meta.env.VITE_SERVER_URL || 'http://localhost:3001'
-      const response = await fetch(`${serverUrl}/api/cards/${cardId}`, {
-        method: 'DELETE',
-        signal: AbortSignal.timeout(5000) // 5秒タイムアウト
-      })
-      const data = await response.json()
+      // サーバーから削除を試行（Viteプロキシ経由）
+      try {
+        const response = await fetch(`/api/cards/${cardId}`, {
+          method: 'DELETE',
+          signal: AbortSignal.timeout(3000) // 3秒タイムアウトに短縮
+        })
+        const data = await response.json()
 
-      if (data.success) {
-        toast.success(data.message)
-        fetchCards() // リストを再取得
-      } else {
-        console.error('Delete failed:', data)
-        toast.error(data.error || 'カードの削除に失敗しました')
-        // デバッグ情報があれば表示
-        if (data.debug) {
-          console.error('Debug info:', data.debug)
+        if (data.success) {
+          toast.success(data.message)
+          fetchCards() // リストを再取得
+          return
+        } else {
+          throw new Error(data.error || 'サーバー削除失敗')
         }
+      } catch (serverError) {
+        console.warn('サーバーから削除失敗、ローカルストレージから削除します:', serverError)
+        
+        // ローカルストレージから削除（フォールバック）
+        const localCards = JSON.parse(localStorage.getItem('customCards') || '[]')
+        const updatedCards = localCards.filter((card: Card) => card.id !== cardId)
+        localStorage.setItem('customCards', JSON.stringify(updatedCards))
+        
+        // ローカル状態も更新
+        setCards(updatedCards)
+        toast.success('カードをローカルから削除しました')
       }
     } catch (error) {
       console.error('Error deleting card:', error)
-      toast.error('サーバーに接続できませんでした')
+      toast.error('カードの削除に失敗しました')
     } finally {
       setShowDeleteConfirm(null)
     }

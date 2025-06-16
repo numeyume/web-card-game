@@ -136,20 +136,53 @@ export function CardBuilder() {
 
     setIsSaving(true)
     try {
-      const serverUrl = import.meta.env.VITE_SERVER_URL || 'http://localhost:3001'
-      const response = await fetch(`${serverUrl}/api/cards`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(cardData),
-        signal: AbortSignal.timeout(10000) // 10秒タイムアウト
-      })
+      // サーバーAPIを試行（Viteプロキシ経由）
+      try {
+        const response = await fetch('/api/cards', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(cardData),
+          signal: AbortSignal.timeout(3000) // 3秒タイムアウトに短縮
+        })
 
-      const result = await response.json()
-      
-      if (result.success) {
-        toast.success(result.message || `カード「${cardData.name}」が正常に作成されました！`)
+        const result = await response.json()
+        
+        if (result.success) {
+          toast.success(result.message || `カード「${cardData.name}」が正常に作成されました！`)
+          // Reset form
+          setCardData({
+            name: '',
+            cost: 0,
+            type: 'Action',
+            effects: [],
+            description: ''
+          })
+          return
+        } else {
+          throw new Error(result.error || 'サーバー保存失敗')
+        }
+      } catch (serverError) {
+        console.warn('サーバー保存失敗、ローカルストレージに保存します:', serverError)
+        
+        // ローカルストレージに保存（フォールバック）
+        const completeCard = {
+          ...cardData,
+          id: `local_${Date.now()}`,
+          createdAt: new Date().toISOString(),
+          type: autoClassifyCard(cardData)
+        } as Card
+
+        // 既存のローカルカードを取得
+        const existingCards = JSON.parse(localStorage.getItem('customCards') || '[]')
+        
+        // 新しいカードを追加
+        const updatedCards = [...existingCards, completeCard]
+        localStorage.setItem('customCards', JSON.stringify(updatedCards))
+        
+        toast.success(`カード「${cardData.name}」をローカルに保存しました！`)
+        
         // Reset form
         setCardData({
           name: '',
@@ -158,12 +191,10 @@ export function CardBuilder() {
           effects: [],
           description: ''
         })
-      } else {
-        toast.error(result.error || 'カードの保存に失敗しました')
       }
     } catch (error) {
       console.error('Error saving card:', error)
-      toast.error('サーバーへの接続に失敗しました')
+      toast.error('カードの保存に失敗しました')
     } finally {
       setIsSaving(false)
     }

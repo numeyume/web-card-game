@@ -17,20 +17,34 @@ export function CardSelector({ onStartGame, onCancel }: CardSelectorProps) {
   const fetchCards = async () => {
     try {
       setLoading(true)
-      const response = await fetch('http://localhost:3001/api/cards')
+      const serverUrl = import.meta.env.VITE_SERVER_URL || 'http://localhost:3001'
+      console.log('🔄 CardSelector: カード取得開始', { serverUrl })
+      
+      const response = await fetch(`${serverUrl}/api/cards`, {
+        signal: AbortSignal.timeout(10000) // 10秒タイムアウト
+      })
+      
+      console.log('🔄 CardSelector: API レスポンス受信', { 
+        status: response.status, 
+        ok: response.ok 
+      })
+      
       const data = await response.json()
+      console.log('🔄 CardSelector: レスポンスデータ', data)
 
       if (data.success) {
         // すべてのカードを表示（アクションカードの制限を解除）
         const allCards = data.cards || []
+        console.log('🔄 CardSelector: カード取得成功', { cardCount: allCards.length })
         setCards(allCards)
       } else {
+        console.error('❌ CardSelector: API エラー', data)
         toast.error('カードの取得に失敗しました')
         setCards([])
       }
     } catch (error) {
-      console.error('Error fetching cards:', error)
-      toast.error('サーバーに接続できませんでした')
+      console.error('❌ CardSelector: 接続エラー:', error)
+      toast.error('サーバーに接続できませんでした: ' + (error?.message || '不明なエラー'))
       setCards([])
     } finally {
       setLoading(false)

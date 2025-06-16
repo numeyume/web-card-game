@@ -81,7 +81,7 @@ export class DominionEngine {
   }
 
   // ゲーム開始
-  async startGame(playerNames: string[] = ['プレイヤー', 'CPU'], selectedCards?: Card[]): Promise<DominionGameState> {
+  startGame(playerNames: string[] = ['プレイヤー', 'CPU'], selectedCards?: Card[]): DominionGameState {
     console.log('🎯 ドミニオンゲーム開始')
     
     // プレイヤー初期化
@@ -101,7 +101,7 @@ export class DominionEngine {
     }))
 
     // サプライ初期化（カスタムカードを含む）
-    const supply = await this.createSupplyWithCustomCards(selectedCards)
+    const supply = this.createSupplyWithCustomCards(selectedCards)
 
     // ゲーム状態初期化
     this.gameState = {
@@ -131,7 +131,7 @@ export class DominionEngine {
   }
 
   // カスタムカードを含むサプライ作成
-  private async createSupplyWithCustomCards(selectedCards?: Card[]): Promise<DominionSupply> {
+  private createSupplyWithCustomCards(selectedCards?: Card[]): DominionSupply {
     const standardSupply = this.createStandardSupply()
     
     try {
@@ -432,6 +432,11 @@ export class DominionEngine {
   // 状態更新コールバック
   private triggerStateUpdate() {
     if (this.onStateUpdate && this.gameState) {
+      // 勝利点を常に最新に更新
+      this.players.forEach(player => {
+        player.totalVictoryPoints = this.calculateVictoryPoints(player)
+      })
+      
       this.onStateUpdate(this.gameState)
     }
   }
@@ -566,24 +571,21 @@ export class DominionEngine {
       case 'action':
         this.gameState.phase = 'buy'
         this.addLog('購入フェーズに移行')
+        this.triggerStateUpdate()
         break
       
       case 'buy':
-        this.gameState.phase = 'cleanup'
-        this.performCleanup()
-        // クリーンアップ後、即座に次のプレイヤーに交代
-        setTimeout(() => {
-          this.nextPlayer()
-        }, 500) // 短い待機時間でクリーンアップを視覚的に確認
+        // 手動でターン終了（プレイヤーが「ターン終了」ボタンを押した場合）
+        this.endCurrentPlayerTurn()
         break
       
       case 'cleanup':
-        // 即座に次のプレイヤーに移行
+        // 通常はここには来ない（endCurrentPlayerTurnで処理される）
+        console.warn('予期しないcleanupフェーズでのmoveToNextPhase呼び出し')
         this.nextPlayer()
         break
     }
 
-    this.triggerStateUpdate()
     return true
   }
 
@@ -608,6 +610,19 @@ export class DominionEngine {
     player.turnsPlayed++
 
     this.addLog('クリーンアップ完了', '5枚ドロー、ターン状態リセット')
+  }
+
+  // 現在のプレイヤーのターンを終了（クリーンアップ→次のプレイヤー）
+  private endCurrentPlayerTurn() {
+    if (!this.gameState || this.gameState.isGameEnded) return
+
+    console.log(`🔄 ${this.currentPlayer.name}のターン終了処理開始`)
+    
+    // クリーンアップ実行
+    this.performCleanup()
+    
+    // 次のプレイヤーに移行
+    this.nextPlayer()
   }
 
   // 次のプレイヤーに交代
@@ -642,7 +657,7 @@ export class DominionEngine {
       setTimeout(() => {
         console.log(`🤖 CPUターン実行開始...`)
         this.executeCPUTurn()
-      }, 1000)
+      }, 500)
     } else {
       console.log(`👤 ${this.currentPlayer.name}のターンです`)
       console.log(`現在の状態: フェーズ=${this.gameState.phase}, プレイヤー=${this.currentPlayer.name}`)
@@ -674,7 +689,7 @@ export class DominionEngine {
   // === CPU AI ===
 
   // CPUターン実行
-  private async executeCPUTurn() {
+  private executeCPUTurn() {
     console.log('🤖 CPUターン実行チェック開始')
     console.log(`ゲーム状態: 終了=${this.gameState?.isGameEnded}, 現在プレイヤー=${this.currentPlayer?.name}, 人間=${this.currentPlayer?.isHuman}`)
     
@@ -699,30 +714,21 @@ export class DominionEngine {
       // アクションフェーズ
       if (this.gameState.phase === 'action') {
         console.log('🎯 CPUアクションフェーズ実行')
-        await this.executeCPUActionPhase()
+        this.executeCPUActionPhase()
         
         // 購入フェーズに移行
         console.log('🔄 CPU: action → buy フェーズ移行')
         this.moveToNextPhase()
-        await new Promise(resolve => setTimeout(resolve, 800))
       }
       
       // 購入フェーズ（CPUプレイヤーのターン中であることを確認）
       if (this.gameState.phase === 'buy' && this.currentPlayer.id === cpuPlayerId) {
         console.log('💰 CPU購入フェーズ実行')
-        await this.executeCPUBuyPhase()
+        this.executeCPUBuyPhase()
         
-        // ターン終了（クリーンアップに移行）
-        console.log('🔄 CPU: buy → cleanup フェーズ移行')
-        this.moveToNextPhase()
-        await new Promise(resolve => setTimeout(resolve, 600))
-      }
-      
-      // クリーンアップフェーズから次のプレイヤーへ（まだCPUのターン中なら）
-      if (this.gameState.phase === 'cleanup' && this.currentPlayer.id === cpuPlayerId) {
-        console.log('🔄 CPU: cleanup完了 → 次のプレイヤーへ移行')
-        this.moveToNextPhase()  // cleanup → next player
-        console.log(`🔄 ターン交代完了: ${this.currentPlayer.name}のターンになりました`)
+        // ターン終了（クリーンアップして次のプレイヤーへ）
+        console.log('🔄 CPU: ターン終了処理開始')
+        this.endCurrentPlayerTurn()
       }
       
       console.log('🤖 CPUターン完了 - プレイヤーターンに戻ります')
@@ -746,7 +752,7 @@ export class DominionEngine {
   }
 
   // CPUアクションフェーズ
-  private async executeCPUActionPhase() {
+  private executeCPUActionPhase() {
     const player = this.currentPlayer
     console.log('🎯 CPUアクションフェーズ')
 
@@ -760,7 +766,6 @@ export class DominionEngine {
 
       console.log(`🎯 CPU: ${bestAction.name}をプレイ`)
       this.playActionCard(bestAction.id)
-      await new Promise(resolve => setTimeout(resolve, 800))
     }
   }
 
@@ -785,7 +790,7 @@ export class DominionEngine {
   }
 
   // CPU購入フェーズ
-  private async executeCPUBuyPhase() {
+  private executeCPUBuyPhase() {
     const player = this.currentPlayer
     console.log('💰 CPU購入フェーズ')
 
@@ -794,15 +799,14 @@ export class DominionEngine {
     for (const treasure of treasureCards) {
       console.log(`💰 CPU: ${treasure.name}をプレイ`)
       this.playTreasureCard(treasure.id)
-      await new Promise(resolve => setTimeout(resolve, 400))
     }
 
     // 戦略的購入
-    await this.executeCPUPurchaseStrategy()
+    this.executeCPUPurchaseStrategy()
   }
 
   // CPU購入戦略
-  private async executeCPUPurchaseStrategy() {
+  private executeCPUPurchaseStrategy() {
     const player = this.currentPlayer
     const turn = this.gameState!.turn
 
@@ -865,7 +869,6 @@ export class DominionEngine {
       }
 
       if (!purchased) break
-      await new Promise(resolve => setTimeout(resolve, 600))
     }
   }
 

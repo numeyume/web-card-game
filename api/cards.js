@@ -146,7 +146,7 @@ class DatabaseService {
         }
         return { success: true };
       }
-      return { success: false, error: 'Card not found' };
+      return { success: false, error: 'カードが見つかりません' };
     }
 
     try {
@@ -163,6 +163,14 @@ class DatabaseService {
 
   async deleteCard(cardId) {
     if (this.useFallback) {
+      // カードが存在するか確認
+      const cardExists = this.fallbackStorage.cards.has(cardId) || 
+                        (typeof global !== 'undefined' && global.cardStorage && global.cardStorage.has(cardId));
+      
+      if (!cardExists) {
+        return { success: false, error: 'カードが見つかりません' };
+      }
+      
       const localDeleted = this.fallbackStorage.cards.delete(cardId);
       let globalDeleted = false;
       if (typeof global !== 'undefined' && global.cardStorage) {

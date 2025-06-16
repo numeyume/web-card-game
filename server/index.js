@@ -584,7 +584,15 @@ app.put('/api/cards/:id', async (req, res) => {
     }
     
     // Update card (using database service)
-    await databaseService.updateCard(id, updatedCard);
+    const updateResult = await databaseService.updateCard(id, updatedCard);
+    
+    if (!updateResult.success) {
+      return res.status(404).json({
+        success: false,
+        error: updateResult.error || 'カードの更新に失敗しました',
+        debug: { cardId: id, updateResult }
+      });
+    }
     
     console.log(`✅ Card updated: "${updatedCard.name}" (${id})`);
     
@@ -620,7 +628,15 @@ app.delete('/api/cards/:id', async (req, res) => {
     }
     
     // Delete card (using database service)
-    await databaseService.deleteCard(id);
+    const deleteResult = await databaseService.deleteCard(id);
+    
+    if (!deleteResult.success) {
+      return res.status(404).json({
+        success: false,
+        error: deleteResult.error || 'カードの削除に失敗しました',
+        debug: { cardId: id, deleteResult }
+      });
+    }
     
     console.log(`🗑️ Card deleted: "${cardToDelete.name}" (${id})`);
     

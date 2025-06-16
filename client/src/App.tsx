@@ -4,10 +4,9 @@ import { WebSocketProvider } from './components/WebSocketProvider'
 import { Lobby } from './components/Lobby'
 import { GameBoard } from './components/GameBoard'
 import { CardBuilder } from './components/CardBuilder'
-import DominionGameBoard from './components/DominionGameBoard'
+import { InteractiveTutorial } from './components/Tutorial/InteractiveTutorial'
 import { CardCollection } from './components/CardCollection'
 import { TutorialScreen } from './components/Tutorial/TutorialScreen'
-import { InteractiveTutorial } from './components/Tutorial/InteractiveTutorial'
 import { CardSelector } from './components/CardSelector'
 
 // Icons as components for better performance and consistency
@@ -111,14 +110,22 @@ function App() {
 
   // CPU対戦モードの場合はWebSocketProviderを迂回
   if (currentView === 'dominion') {
+    console.log('🎯 App.tsx: CPU対戦モード開始 - CPUGameBoardをレンダリング中')
     return (
       <div className="min-h-screen bg-background-primary text-text-primary">
-        <DominionGameBoard 
-          onExitGame={() => {
+        <InteractiveTutorial 
+          onComplete={() => {
+            console.log('🏁 CPU対戦完了')
+            setSelectedCards([]) // カスタムカードをリセット
+            setCurrentView('lobby')
+          }}
+          onExit={() => {
+            console.log('🚪 CPU対戦終了 - ロビーに戻る')
             setSelectedCards([]) // カスタムカードをリセット
             setCurrentView('lobby')
           }} 
           selectedCards={selectedCards}
+          isCPUMode={true}
         />
         
         {/* Toast Notifications */}

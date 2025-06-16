@@ -41,14 +41,29 @@ export function DominionGameBoard({ onExitGame, selectedCards }: DominionGameBoa
   })
 
   // ゲーム開始
-  const startGame = async () => {
+  const startGame = () => {
     console.log('🎯 ドミニオンゲーム開始')
     setIsLoading(true)
     
+    // タイムアウト処理を追加して5秒でローディングを解除
+    const timeout = setTimeout(() => {
+      console.warn('⚠️ ゲーム開始がタイムアウトしました')
+      setIsLoading(false)
+      toast.error('ゲームの開始がタイムアウトしました。もう一度お試しください。', {
+        icon: '⏰',
+        style: { borderLeft: '4px solid #ef4444' }
+      })
+    }, 5000)
+    
     try {
-      const newGameState = await gameEngine.startGame(['プレイヤー', 'CPU'], selectedCards)
+      console.log('🎯 ゲームエンジン初期化開始')
+      const newGameState = gameEngine.startGame(['プレイヤー', 'CPU'], selectedCards)
+      console.log('🎯 ゲーム状態設定完了:', newGameState)
+      
+      clearTimeout(timeout) // タイムアウトをクリア
       setGameState(newGameState)
       setIsLoading(false)
+      
       toast.success('🎯 ドミニオンゲームが開始されました！', {
         icon: '🎉',
         style: { borderLeft: '4px solid #10b981' },
@@ -56,8 +71,9 @@ export function DominionGameBoard({ onExitGame, selectedCards }: DominionGameBoa
       })
     } catch (error) {
       console.error('❌ ゲーム開始エラー:', error)
+      clearTimeout(timeout) // エラー時もタイムアウトをクリア
       setIsLoading(false)
-      toast.error('ゲームの開始に失敗しました', {
+      toast.error(`ゲームの開始に失敗しました: ${error instanceof Error ? error.message : '不明なエラー'}`, {
         icon: '❌',
         style: { borderLeft: '4px solid #ef4444' }
       })
@@ -308,7 +324,14 @@ export function DominionGameBoard({ onExitGame, selectedCards }: DominionGameBoa
               disabled={isLoading}
               className="btn-primary text-lg px-8 py-3"
             >
-              {isLoading ? '準備中...' : '🏰 ドミニオン対戦を開始'}
+              {isLoading ? (
+                <span className="flex items-center space-x-2">
+                  <span className="animate-spin">⚙️</span>
+                  <span>カードを読み込み中...</span>
+                </span>
+              ) : (
+                '🏰 ドミニオン対戦を開始'
+              )}
             </button>
             <button
               onClick={onExitGame}

@@ -31,7 +31,7 @@ const EFFECT_TEMPLATES: Record<string, { label: string, icon: string, effect: Om
     effect: { type: 'gain_buy', target: 'self' }
   },
   attack: {
-    label: '他者を攻撃',
+    label: '相手の手札を減らす',
     icon: '⚔️',
     effect: { type: 'attack', target: 'opponent' }
   },
@@ -165,6 +165,18 @@ function EffectSlot({ effect, index, onUpdate, onRemove, onMove }: {
               placeholder="例: コスト ≤ 3"
               className="w-full px-2 py-1 bg-zinc-800 border border-zinc-600 rounded text-sm focus:outline-none focus:ring-1 focus:ring-purple-500"
             />
+          </div>
+        )}
+        
+        {effect.type === 'attack' && (
+          <div className="bg-red-900/20 border border-red-600/30 rounded p-2 mt-2">
+            <div className="text-xs text-red-300">
+              💡 <strong>攻撃効果の説明：</strong><br/>
+              この効果は相手プレイヤーに対して害を与えます。<br/>
+              • 効果値1 = 相手は手札から1枚捨てる<br/>
+              • 効果値2 = 相手は手札から2枚捨てる<br/>
+              ドミニオンの魔女や盗賊のような妨害カード効果です。
+            </div>
           </div>
         )}
       </div>
@@ -310,7 +322,7 @@ export function EffectPanel({ effects, onAddEffect, onRemoveEffect, onUpdateEffe
           <li>• 1枚のカードには最大3つまでの効果</li>
           <li>• 効果値は1〜10に設定してください</li>
           <li>• 値を設定する際はゲームバランスを考慮</li>
-          <li>• 攻撃効果はデフォルトで相手を対象</li>
+          <li>• 攻撃効果は相手の手札からカードを捨てさせる効果</li>
           <li>• ドラッグして効果の順序を変更可能</li>
         </ul>
       </div>

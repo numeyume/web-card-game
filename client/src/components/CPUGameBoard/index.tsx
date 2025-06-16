@@ -30,10 +30,12 @@ interface GameState {
 
 interface GameBoardProps {
   onExitGame: () => void
+  selectedCards?: Card[]
 }
 
-export function CPUGameBoard({ onExitGame }: GameBoardProps) {
+export function CPUGameBoard({ onExitGame, selectedCards }: GameBoardProps) {
   console.log('🚨🚨🚨 CPUGameBoard コンポーネントが実行されています 🚨🚨🚨')
+  console.log('🎴 受信した選択カード:', selectedCards)
   
   const [gameState, setGameState] = useState<GameState | null>(null)
   const [playerHand, setPlayerHand] = useState<Card[]>([])
@@ -64,20 +66,36 @@ export function CPUGameBoard({ onExitGame }: GameBoardProps) {
 
   // CPU対戦を開始（ローカル）
   const startSinglePlayerGame = () => {
-    console.log('🚀 ローカルCPU対戦を開始します')
+    console.log('🚀 startSinglePlayerGame 関数が呼ばれました')
+    console.log('🚀 CPU エンジンの状態:', cpuEngine)
     setIsLoading(true)
     
     try {
+      console.log('🎯 cpuEngine.startGame を呼び出し中...')
       const localGameState = cpuEngine.startGame('normal')
+      console.log('🎯 startGame から返されたゲーム状態:', localGameState)
+      
       setGameState(localGameState as any)
+      console.log('🎯 setGameState 完了')
+      
       setPlayerHand(cpuEngine.getPlayerHand(cpuEngine.getHumanPlayerId()))
+      console.log('🎯 setPlayerHand 完了')
+      
       setIsLoading(false)
       setShowTutorial(false)
+      console.log('🎯 ローディング完了、チュートリアル非表示に設定')
+      
       toast.success('CPU対戦が開始されました！')
+      console.log('🎯 CPU対戦開始処理すべて完了')
     } catch (error) {
       console.error('❌ CPU対戦開始エラー:', error)
+      console.error('❌ エラーの詳細:', {
+        name: error?.name,
+        message: error?.message,
+        stack: error?.stack
+      })
       setIsLoading(false)
-      toast.error('CPU対戦の開始に失敗しました')
+      toast.error('CPU対戦の開始に失敗しました: ' + (error?.message || '不明なエラー'))
     }
   }
 
@@ -276,7 +294,10 @@ export function CPUGameBoard({ onExitGame }: GameBoardProps) {
           <h2 className="text-2xl font-bold mb-6">ゲーム開始</h2>
           <div className="space-y-4">
             <button
-              onClick={startSinglePlayerGame}
+              onClick={() => {
+                console.log('🖱️ CPU対戦開始ボタンがクリックされました')
+                startSinglePlayerGame()
+              }}
               disabled={isLoading}
               className="btn-primary text-lg px-8 py-3"
             >
@@ -293,6 +314,17 @@ export function CPUGameBoard({ onExitGame }: GameBoardProps) {
             難易度は標準（Normal）に設定されています。<br/>
             CPUと1対1でデッキ構築バトルを楽しもう！
           </p>
+          
+          {/* デバッグ情報 */}
+          <div className="mt-6 p-4 bg-zinc-800 rounded-lg border border-zinc-600">
+            <h3 className="text-sm font-bold text-yellow-400 mb-2">🔧 デバッグ情報</h3>
+            <div className="text-xs text-zinc-300 space-y-1">
+              <div>gameState: {gameState ? 'あり' : 'なし'}</div>
+              <div>isLoading: {isLoading ? 'true' : 'false'}</div>
+              <div>showTutorial: {showTutorial ? 'true' : 'false'}</div>
+              <div>cpuEngine: {cpuEngine ? 'あり' : 'なし'}</div>
+            </div>
+          </div>
         </div>
       </div>
     )

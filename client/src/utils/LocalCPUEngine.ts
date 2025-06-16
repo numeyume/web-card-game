@@ -32,11 +32,13 @@ export class LocalCPUEngine {
   private onStateUpdate?: (gameState: LocalGameState) => void
 
   constructor(onStateUpdate?: (gameState: LocalGameState) => void) {
+    console.log('🔧 LocalCPUEngine コンストラクタ実行中')
     this.onStateUpdate = onStateUpdate
+    console.log('🔧 LocalCPUEngine 初期化完了')
   }
 
   // ゲーム開始
-  startGame(difficulty: string = 'normal'): LocalGameState {
+  startGame(difficulty: string = 'normal', customCards: Card[] = []): LocalGameState {
     console.log('🎯 ローカルCPU対戦開始:', difficulty)
     console.log('🎯 プレイヤーID設定:', {
       humanPlayerId: this.humanPlayerId,
@@ -74,7 +76,7 @@ export class LocalCPUEngine {
       currentPlayer: this.humanPlayerId, // IDで管理
       turn: 1,
       phase: 'action',
-      supply: this.createBasicSupply(),
+      supply: this.createBasicSupply(customCards),
       log: []
     }
 
@@ -94,8 +96,10 @@ export class LocalCPUEngine {
   }
 
   // 基本サプライ作成
-  private createBasicSupply() {
-    return {
+  private createBasicSupply(customCards: Card[] = []) {
+    console.log('🏗️ サプライ作成中:', { customCardsCount: customCards.length })
+    
+    const basicSupply = {
       copper: {
         id: 'copper',
         name: '銅貨',
@@ -177,6 +181,8 @@ export class LocalCPUEngine {
         count: 10
       }
     }
+    
+    return basicSupply
   }
 
   // プレイヤーの初期デッキ設定

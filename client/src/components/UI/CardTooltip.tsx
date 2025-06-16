@@ -58,26 +58,26 @@ export function CardTooltip({ card, cost, show, position, mode = 'compact' }: Ca
         case 'draw':
           return <div key={index} className="flex items-center space-x-2">
             <span className="text-green-400">🃏</span>
-            <span>+{effect.value} カードドロー</span>
-            <span className="text-xs text-green-300">（手札が増える）</span>
+            <span>+{effect.value} カード</span>
+            {mode === 'detailed' && <span className="text-xs text-green-300">（手札が増える）</span>}
           </div>
         case 'gain_action':
           return <div key={index} className="flex items-center space-x-2">
             <span className="text-blue-400">⚡</span>
             <span>+{effect.value} アクション</span>
-            <span className="text-xs text-blue-300">（追加でアクションカードをプレイ可能）</span>
+            {mode === 'detailed' && <span className="text-xs text-blue-300">（追加でアクションカードをプレイ可能）</span>}
           </div>
         case 'gain_buy':
           return <div key={index} className="flex items-center space-x-2">
             <span className="text-green-400">🛍</span>
             <span>+{effect.value} 購入</span>
-            <span className="text-xs text-green-300">（追加でカードを購入可能）</span>
+            {mode === 'detailed' && <span className="text-xs text-green-300">（追加でカードを購入可能）</span>}
           </div>
         case 'gain_coin':
           return <div key={index} className="flex items-center space-x-2">
             <span className="text-yellow-400">💰</span>
             <span>+{effect.value} コイン</span>
-            <span className="text-xs text-yellow-300">（このターンのみ）</span>
+            {mode === 'detailed' && <span className="text-xs text-yellow-300">（このターンのみ）</span>}
           </div>
         default:
           return null

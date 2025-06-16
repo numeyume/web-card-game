@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import toast from 'react-hot-toast'
 import type { Card } from '@/types'
 import { DominionEngine } from '@/utils/DominionEngine'
@@ -49,15 +49,15 @@ export function InteractiveTutorial({ onComplete, onExit, selectedCards, isCPUMo
     }
   }, [gameState])
 
-  // コンポーネント初期化時にゲームを自動開始
-  useEffect(() => {
-    console.log('🎯 InteractiveTutorial 初期化:', { isCPUMode, selectedCards })
-    startGame()
-  }, []) // 空の依存配列で初期化時のみ実行
-
-  // ゲーム開始
-  const startGame = () => {
-    console.log('🎯 InteractiveTutorial - ゲーム開始', { selectedCards, isCPUMode })
+  // ゲーム開始関数（useCallbackで安定化）
+  const startGame = useCallback(() => {
+    console.log('🎯 InteractiveTutorial - ゲーム開始試行', { 
+      selectedCards, 
+      isCPUMode, 
+      gameEngineExists: !!gameEngine,
+      cardCount: selectedCards?.length || 0
+    })
+    
     setIsLoading(true)
     
     const timeout = setTimeout(() => {
@@ -67,9 +67,26 @@ export function InteractiveTutorial({ onComplete, onExit, selectedCards, isCPUMo
     }, 5000)
     
     try {
+      if (!gameEngine) {
+        throw new Error('ゲームエンジンが初期化されていません')
+      }
+
       const playerNames = isCPUMode ? ['プレイヤー', 'CPU'] : ['あなた', 'チュートリアルCPU']
+      console.log('🎯 DominionEngine.startGame呼び出し中...', { playerNames, selectedCards })
+      
       const newGameState = gameEngine.startGame(playerNames, selectedCards)
-      console.log('🎯 ゲーム状態設定完了:', newGameState)
+      
+      if (!newGameState) {
+        throw new Error('ゲーム状態の初期化に失敗しました')
+      }
+      
+      console.log('🎯 ゲーム状態設定完了:', {
+        gameId: newGameState.gameId,
+        playerCount: newGameState.players?.length,
+        currentPlayer: newGameState.players?.[newGameState.currentPlayerIndex]?.name,
+        phase: newGameState.phase,
+        turn: newGameState.turn
+      })
       
       clearTimeout(timeout)
       setGameState(newGameState)
@@ -81,12 +98,38 @@ export function InteractiveTutorial({ onComplete, onExit, selectedCards, isCPUMo
         toast.success('📚 チュートリアルが開始されました！')
       }
     } catch (error) {
-      console.error('❌ ゲーム開始エラー:', error)
+      console.error('❌ ゲーム開始エラー詳細:', {
+        error,
+        message: error instanceof Error ? error.message : '不明なエラー',
+        stack: error instanceof Error ? error.stack : undefined,
+        selectedCards,
+        isCPUMode,
+        gameEngine: !!gameEngine
+      })
       clearTimeout(timeout)
       setIsLoading(false)
       toast.error(`ゲームの開始に失敗しました: ${error instanceof Error ? error.message : '不明なエラー'}`)
     }
-  }
+  }, [selectedCards, isCPUMode, gameEngine])
+
+  // コンポーネント初期化時にゲームを自動開始
+  useEffect(() => {
+    console.log('🎯 InteractiveTutorial useEffect実行:', { 
+      isCPUMode, 
+      selectedCards: selectedCards?.length || 0,
+      gameState: !!gameState 
+    })
+    
+    // gameStateがまだnullの場合のみゲーム開始
+    if (!gameState) {
+      const timer = setTimeout(() => {
+        console.log('🎯 startGame呼び出し中...')
+        startGame()
+      }, 100) // 少し遅延させてコンポーネントの初期化を完了させる
+      
+      return () => clearTimeout(timer)
+    }
+  }, [startGame, gameState])
 
   // アクションカードをプレイ
   const playActionCard = (card: Card) => {
@@ -300,13 +343,49 @@ export function InteractiveTutorial({ onComplete, onExit, selectedCards, isCPUMo
           </div>
         </div>
 
+        {/* デバッグ情報表示 */}
+        <div className="card mb-6 border border-blue-500/30 bg-blue-500/5">
+          <h3 className="text-lg font-bold mb-3 text-blue-400">🔍 デバッグ情報</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+            <div>
+              <div className="space-y-1">
+                <div>モード: <span className="font-mono">{isCPUMode ? 'CPU対戦' : 'チュートリアル'}</span></div>
+                <div>選択カード数: <span className="font-mono">{selectedCards?.length || 0}</span></div>
+                <div>ゲームエンジン: <span className="font-mono">{gameEngine ? '✅ OK' : '❌ NG'}</span></div>
+                <div>ゲーム状態: <span className="font-mono">{gameState ? '✅ 初期化済み' : '❌ 未初期化'}</span></div>
+              </div>
+            </div>
+            <div>
+              <div className="space-y-1">
+                <div>ローディング: <span className="font-mono">{isLoading ? '🔄 実行中' : '⏸️ 停止中'}</span></div>
+                <div>自動開始: <span className="font-mono">✅ 有効</span></div>
+                <div>環境: <span className="font-mono">{import.meta.env.MODE}</span></div>
+                <div>タイムスタンプ: <span className="font-mono">{new Date().toLocaleTimeString()}</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div className="card text-center">
           <h2 className="text-2xl font-bold mb-6">ゲーム開始</h2>
+          
+          {isLoading && (
+            <div className="mb-6 p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+              <div className="flex items-center justify-center space-x-3 mb-2">
+                <span className="animate-spin text-2xl">⚙️</span>
+                <span className="text-lg font-medium">ゲーム初期化中...</span>
+              </div>
+              <div className="text-sm text-zinc-400">
+                {isCPUMode ? 'CPU対戦環境を準備しています' : 'チュートリアル環境を準備しています'}
+              </div>
+            </div>
+          )}
+          
           <div className="space-y-4">
             <button
               onClick={startGame}
               disabled={isLoading}
-              className="btn-primary text-lg px-8 py-3"
+              className="btn-primary text-lg px-8 py-3 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isLoading ? (
                 <span className="flex items-center space-x-2">
@@ -314,15 +393,34 @@ export function InteractiveTutorial({ onComplete, onExit, selectedCards, isCPUMo
                   <span>準備中...</span>
                 </span>
               ) : (
-                isCPUMode ? '🤖 CPU対戦を開始' : '📚 チュートリアルを開始'
+                <>
+                  <span>{isCPUMode ? '🤖' : '📚'}</span>
+                  <span className="ml-2">
+                    {gameState ? '再開始' : (isCPUMode ? 'CPU対戦を開始' : 'チュートリアルを開始')}
+                  </span>
+                </>
               )}
             </button>
-            <button
-              onClick={onExit}
-              className="btn-secondary text-lg px-8 py-3 ml-4"
-            >
-              ロビーに戻る
-            </button>
+            
+            {!isLoading && (
+              <div className="space-x-4">
+                <button
+                  onClick={onExit}
+                  className="btn-secondary text-lg px-6 py-2"
+                >
+                  ロビーに戻る
+                </button>
+                <button
+                  onClick={() => {
+                    console.log('🔄 手動リロード実行')
+                    window.location.reload()
+                  }}
+                  className="btn-secondary text-sm px-4 py-2"
+                >
+                  🔄 リロード
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>

@@ -20,6 +20,11 @@ export class DatabaseService {
       usersAnon: new Map(),
       analytics: new Map()
     };
+    
+    // Vercel環境での永続化用グローバルストレージ
+    if (typeof global !== 'undefined' && !global.cardStorage) {
+      global.cardStorage = new Map();
+    }
   }
 
   /**
@@ -181,25 +186,8 @@ export class DatabaseService {
    * カード作成
    */
   async createCard(cardData) {
-    if (this.useFallback) {
-      this.fallbackStorage.cards.set(cardData.cardId, {
-        ...cardData,
-        _id: cardData.cardId,
-        createdAt: new Date()
-      });
-      return { success: true, cardId: cardData.cardId };
-    }
-
-    try {
-      const result = await this.db.collection('cards').insertOne({
-        ...cardData,
-        createdAt: new Date()
-      });
-      return { success: true, cardId: cardData.cardId, insertedId: result.insertedId };
-    } catch (error) {
-      console.error('カード作成エラー:', error.message);
-      return { success: false, error: error.message };
-    }
+    // Use saveCard for consistency
+    return await this.saveCard(cardData);
   }
 
   /**
@@ -207,7 +195,11 @@ export class DatabaseService {
    */
   async getCard(cardId) {
     if (this.useFallback) {
-      return this.fallbackStorage.cards.get(cardId) || null;
+      let card = this.fallbackStorage.cards.get(cardId);
+      if (!card && typeof global !== 'undefined' && global.cardStorage) {
+        card = global.cardStorage.get(cardId);
+      }
+      return card || null;
     }
 
     try {
@@ -223,7 +215,17 @@ export class DatabaseService {
    */
   async getCards(filter = {}) {
     if (this.useFallback) {
+      // Merge local and global storage for Vercel compatibility
       let cards = Array.from(this.fallbackStorage.cards.values());
+      
+      if (typeof global !== 'undefined' && global.cardStorage) {
+        const globalCards = Array.from(global.cardStorage.values());
+        // Merge and deduplicate by card ID
+        const cardMap = new Map();
+        cards.forEach(card => cardMap.set(card.id, card));
+        globalCards.forEach(card => cardMap.set(card.id, card));
+        cards = Array.from(cardMap.values());
+      }
       
       if (filter.createdBy) {
         cards = cards.filter(card => card.createdBy === filter.createdBy);
@@ -232,7 +234,7 @@ export class DatabaseService {
         cards = cards.filter(card => card.type === filter.type);
       }
       
-      return cards.sort((a, b) => b.createdAt - a.createdAt);
+      return cards.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
     }
 
     try {
@@ -258,21 +260,34 @@ export class DatabaseService {
    */
   async saveCard(cardData) {
     if (this.useFallback) {
-      this.fallbackStorage.cards.set(cardData.id, {
+      // Use cardId as key for consistency
+      const cardKey = cardData.id || cardData.cardId;
+      const cardObject = {
         ...cardData,
-        _id: cardData.id,
-        createdAt: new Date()
-      });
-      return { success: true, cardId: cardData.id };
+        id: cardKey,
+        cardId: cardKey,
+        _id: cardKey,
+        createdAt: cardData.createdAt || new Date()
+      };
+      
+      // Store in both local and global storage for Vercel compatibility
+      this.fallbackStorage.cards.set(cardKey, cardObject);
+      if (typeof global !== 'undefined' && global.cardStorage) {
+        global.cardStorage.set(cardKey, cardObject);
+      }
+      
+      return { success: true, cardId: cardKey };
     }
 
     try {
+      const cardKey = cardData.id || cardData.cardId;
       const result = await this.db.collection('cards').insertOne({
         ...cardData,
-        cardId: cardData.id, // Add cardId field for consistency
-        createdAt: new Date()
+        id: cardKey,
+        cardId: cardKey, // Add cardId field for consistency
+        createdAt: cardData.createdAt || new Date()
       });
-      return { success: true, cardId: cardData.id, insertedId: result.insertedId };
+      return { success: true, cardId: cardKey, insertedId: result.insertedId };
     } catch (error) {
       console.error('カード保存エラー:', error.message);
       return { success: false, error: error.message };
@@ -284,9 +299,14 @@ export class DatabaseService {
    */
   async updateCard(cardId, updateData) {
     if (this.useFallback) {
-      const card = this.fallbackStorage.cards.get(cardId);
+      const card = this.fallbackStorage.cards.get(cardId) || 
+                   (typeof global !== 'undefined' && global.cardStorage ? global.cardStorage.get(cardId) : null);
       if (card) {
-        this.fallbackStorage.cards.set(cardId, { ...card, ...updateData, updatedAt: new Date() });
+        const updatedCard = { ...card, ...updateData, updatedAt: new Date() };
+        this.fallbackStorage.cards.set(cardId, updatedCard);
+        if (typeof global !== 'undefined' && global.cardStorage) {
+          global.cardStorage.set(cardId, updatedCard);
+        }
         return { success: true };
       }
       return { success: false, error: 'Card not found' };
@@ -294,7 +314,7 @@ export class DatabaseService {
 
     try {
       const result = await this.db.collection('cards').updateOne(
-        { id: cardId },
+        { cardId: cardId },
         { $set: { ...updateData, updatedAt: new Date() } }
       );
       return { success: true, modifiedCount: result.modifiedCount };
@@ -309,12 +329,16 @@ export class DatabaseService {
    */
   async deleteCard(cardId) {
     if (this.useFallback) {
-      const deleted = this.fallbackStorage.cards.delete(cardId);
-      return { success: deleted };
+      const localDeleted = this.fallbackStorage.cards.delete(cardId);
+      let globalDeleted = false;
+      if (typeof global !== 'undefined' && global.cardStorage) {
+        globalDeleted = global.cardStorage.delete(cardId);
+      }
+      return { success: localDeleted || globalDeleted };
     }
 
     try {
-      const result = await this.db.collection('cards').deleteOne({ id: cardId });
+      const result = await this.db.collection('cards').deleteOne({ cardId: cardId });
       return { success: true, deletedCount: result.deletedCount };
     } catch (error) {
       console.error('カード削除エラー:', error.message);
@@ -484,6 +508,7 @@ export class DatabaseService {
    */
   async healthCheck() {
     if (this.useFallback) {
+      const globalCardCount = (typeof global !== 'undefined' && global.cardStorage) ? global.cardStorage.size : 0;
       return {
         status: 'ok',
         database: 'fallback',
@@ -493,6 +518,9 @@ export class DatabaseService {
           cards: this.fallbackStorage.cards.size,
           users: this.fallbackStorage.usersAnon.size,
           analytics: this.fallbackStorage.analytics.size
+        },
+        globalStorage: {
+          cards: globalCardCount
         }
       };
     }

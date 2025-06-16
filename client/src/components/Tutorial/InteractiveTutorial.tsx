@@ -49,6 +49,12 @@ export function InteractiveTutorial({ onComplete, onExit, selectedCards, isCPUMo
     }
   }, [gameState])
 
+  // コンポーネント初期化時にゲームを自動開始
+  useEffect(() => {
+    console.log('🎯 InteractiveTutorial 初期化:', { isCPUMode, selectedCards })
+    startGame()
+  }, []) // 空の依存配列で初期化時のみ実行
+
   // ゲーム開始
   const startGame = () => {
     console.log('🎯 InteractiveTutorial - ゲーム開始', { selectedCards, isCPUMode })

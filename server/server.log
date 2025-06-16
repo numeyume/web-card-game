@@ -1,28 +1,22 @@
-📡 Connecting to MongoDB...
-❌ MongoDB connection failed: connect ECONNREFUSED 127.0.0.1:27017
-⚠️ MongoDB not available, running in memory mode
-🚀 Server running on port 3001
-🌍 Environment: development
-📡 Socket.IO ready for connections
-🔗 Client URL: http://localhost:5173
-🍃 MongoDB: Offline (development mode)
-User connected: Anonymous_17498696 (anon_1749869620982_ium89cs87)
-User connected: Anonymous_17498696 (anon_1749869622877_gpiee4rlj)
-User connected: Anonymous_17498697 (anon_1749869784067_xj2tn7noj)
-User connected: Anonymous_17498697 (anon_1749869784068_yiufl5nqx)
-User disconnected: Anonymous_17498697 (transport close)
-User disconnected: Anonymous_17498697 (transport close)
-User connected: Anonymous_17498699 (anon_1749869904113_lhzv9w6fl)
-User connected: Anonymous_17498699 (anon_1749869904123_o3ei28lmj)
-User disconnected: Anonymous_17498699 (transport close)
-User disconnected: Anonymous_17498699 (transport close)
-User disconnected: Anonymous_17498696 (transport close)
-User disconnected: Anonymous_17498696 (transport close)
-User connected: Anonymous_17498747 (anon_1749874754108_f1zupxbi1)
-User connected: Anonymous_17498747 (anon_1749874754136_5jgyr4ht1)
-User disconnected: Anonymous_17498747 (transport close)
-User disconnected: Anonymous_17498747 (transport close)
-User connected: Anonymous_17498838 (anon_1749883847356_cpx4rt3mu)
-User connected: Anonymous_17498838 (anon_1749883847372_i00808qn9)
-User disconnected: Anonymous_17498838 (transport close)
-User disconnected: Anonymous_17498838 (transport close)
+❌ MongoDB接続失敗: connect ECONNREFUSED 127.0.0.1:27017
+📦 フォールバックモードで動作します
+node:events:495
+      throw er; // Unhandled 'error' event
+      ^
+
+Error: listen EADDRINUSE: address already in use :::3001
+    at Server.setupListenHandle [as _listen2] (node:net:1811:16)
+    at listenInCluster (node:net:1859:12)
+    at Server.listen (node:net:1947:7)
+    at startServer (file:///home/tamaz/projects/web-card-game/server/index.js:544:10)
+Emitted 'error' event on Server instance at:
+    at emitErrorNT (node:net:1838:8)
+    at process.processTicksAndRejections (node:internal/process/task_queues:82:21) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '::',
+  port: 3001
+}
+
+Node.js v18.19.1

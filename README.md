@@ -11,47 +11,30 @@
 
 ## 🚀 Quick Start
 
-### Option 1: Automated Testing (Recommended)
-```bash
-# Run all validation tests
-./test-all.bat
+**Windows環境 (C:\Users\tamaz\web-card-game)**
 
-# Start the server
-./start-server.bat
+```cmd
+cd C:\Users\tamaz\web-card-game
 
-# In another terminal, start the client
-cd client
-./start-client.bat
-```
-
-### Option 2: Manual Setup
-```bash
 # Install dependencies
 npm install
 
-# Test all engines
-node test-endgame.js
-node test-voting-system.js
-
-# Start server
-node index.cjs
-
-# Start client (in another terminal)
-cd client
+# Start development environment
 npm run dev
 ```
 
-### Option 3: Static Demo
-Open `test-static.html` in your browser for a feature overview.
+**アクセス:**
+- **ゲーム**: http://localhost:5173
+- **API**: http://localhost:3001
 
-### Option 4: Production Deployment 🌐
-```bash
-# Check deployment readiness
-./deploy-check.bat
-
-# Follow deployment guide
-# See DEPLOYMENT.md for complete instructions
+### テスト実行
+```cmd
+# 統合テスト（推奨）
+node test-server-integration.js
 ```
+
+### 📖 詳細ガイド
+**DEVELOPMENT_GUIDE.md** を参照してください。
 
 ---
 
@@ -79,20 +62,17 @@ Open `test-static.html` in your browser for a feature overview.
 
 ## 🧪 Testing & Validation
 
-The project includes comprehensive test suites:
+**統合テストスイート:**
 
-- **`test-all.bat`** - Complete validation runner (Windows)
-- **`test-endgame.js`** - End condition engine validation
-- **`test-voting-system.js`** - Voting system & analytics validation
-- **`test-static.html`** - Static feature demonstration
+```cmd
+node test-server-integration.js
+```
 
-### Quick Validation Commands
-```bash
-# Windows
-test-all.bat
-
-# Linux/Mac
-node test-endgame.js && node test-voting-system.js
+**期待される結果:**
+```
+✅ 成功: 7
+❌ エラー: 0  
+🎉 全テスト成功！
 ```
 
 ---
@@ -188,10 +168,9 @@ This MVP successfully implements:
 
 ## 📞 Quick Support
 
-1. **Run validation**: `test-all.bat`
-2. **Check server logs**: `server.log`
-3. **View features**: Open `test-static.html`
-4. **Development guide**: See `CLAUDE.md`
+1. **統合テスト**: `node test-server-integration.js`
+2. **開発ガイド**: `DEVELOPMENT_GUIDE.md`
+3. **設定確認**: `type server\.env`
 
 **🎮 Built with ❤️ using modern web technologies - Happy Gaming!**
 

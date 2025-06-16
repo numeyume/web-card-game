@@ -3,9 +3,13 @@ export interface Card {
   name: string
   cost: number
   type: 'Action' | 'Treasure' | 'Victory' | 'Curse' | 'Custom'
-  effects: CardEffect[]
+  effects?: CardEffect[]
+  victoryPoints?: number  // ドミニオン勝利点カード用
   creatorId?: string
   description: string
+  createdAt?: string
+  createdBy?: string
+  version?: string
 }
 
 export interface CardEffect {
@@ -201,6 +205,9 @@ export interface GameState {
   gameEndResult?: GameEndResult
   votingSession?: VotingSession
   cardUsageStats?: any
+  // CPU対戦用
+  cpuGameState?: any
+  playerHand?: Card[]
 }
 
 export interface GameLogEntry {

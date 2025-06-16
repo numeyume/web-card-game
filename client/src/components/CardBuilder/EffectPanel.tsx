@@ -11,32 +11,32 @@ interface EffectPanelProps {
 
 const EFFECT_TEMPLATES: Record<string, { label: string, icon: string, effect: Omit<CardEffect, 'value'> }> = {
   draw: {
-    label: 'Draw Cards',
+    label: 'カードを引く',
     icon: '🃏',
     effect: { type: 'draw', target: 'self' }
   },
   gain_coin: {
-    label: 'Gain Coins',
+    label: 'コインを得る',
     icon: '🪙',
     effect: { type: 'gain_coin', target: 'self' }
   },
   gain_action: {
-    label: 'Gain Actions',
+    label: 'アクションを得る',
     icon: '⚡',
     effect: { type: 'gain_action', target: 'self' }
   },
   gain_buy: {
-    label: 'Gain Buys',
+    label: '購入を得る',
     icon: '🛒',
     effect: { type: 'gain_buy', target: 'self' }
   },
   attack: {
-    label: 'Attack Others',
+    label: '他者を攻撃',
     icon: '⚔️',
     effect: { type: 'attack', target: 'opponent' }
   },
   gain_card: {
-    label: 'Gain Card',
+    label: 'カードを獲得',
     icon: '📥',
     effect: { type: 'gain_card', target: 'self' }
   }
@@ -130,7 +130,7 @@ function EffectSlot({ effect, index, onUpdate, onRemove, onMove }: {
       <div className="space-y-2">
         <div className="grid grid-cols-2 gap-2">
           <div>
-            <label className="block text-xs text-zinc-400 mb-1">Value</label>
+            <label className="block text-xs text-zinc-400 mb-1">効果値</label>
             <input
               type="number"
               value={effect.value}
@@ -142,27 +142,27 @@ function EffectSlot({ effect, index, onUpdate, onRemove, onMove }: {
           </div>
           
           <div>
-            <label className="block text-xs text-zinc-400 mb-1">Target</label>
+            <label className="block text-xs text-zinc-400 mb-1">対象</label>
             <select
               value={effect.target || 'self'}
               onChange={(e) => onUpdate({ ...effect, target: e.target.value as CardEffect['target'] })}
               className="w-full px-2 py-1 bg-zinc-800 border border-zinc-600 rounded text-sm focus:outline-none focus:ring-1 focus:ring-purple-500"
             >
-              <option value="self">Self</option>
-              <option value="opponent">Opponent</option>
-              <option value="all">All Players</option>
+              <option value="self">自分</option>
+              <option value="opponent">相手</option>
+              <option value="all">全プレイヤー</option>
             </select>
           </div>
         </div>
 
         {effect.type === 'gain_card' && (
           <div>
-            <label className="block text-xs text-zinc-400 mb-1">Condition</label>
+            <label className="block text-xs text-zinc-400 mb-1">条件</label>
             <input
               type="text"
               value={effect.condition || ''}
               onChange={(e) => onUpdate({ ...effect, condition: e.target.value })}
-              placeholder="e.g., cost ≤ 3"
+              placeholder="例: コスト ≤ 3"
               className="w-full px-2 py-1 bg-zinc-800 border border-zinc-600 rounded text-sm focus:outline-none focus:ring-1 focus:ring-purple-500"
             />
           </div>
@@ -181,7 +181,7 @@ function DropZone({ children, onDrop }: { children: React.ReactNode, onDrop: (ef
     e.dataTransfer.dropEffect = 'copy'
   }
 
-  const handleDragLeave = (e: React.DragEvent) => {
+  const handleDragLeave = () => {
     setIsOver(false)
   }
 
@@ -216,7 +216,7 @@ function DropZone({ children, onDrop }: { children: React.ReactNode, onDrop: (ef
 export function EffectPanel({ effects, onAddEffect, onRemoveEffect, onUpdateEffect }: EffectPanelProps) {
   const handleDropEffect = (effectType: string) => {
     if (effects.length >= 3) {
-      toast.error('Maximum 3 effects per card')
+      toast.error('1枚のカードには最大3つまでしか効果を設定できません')
       return
     }
 
@@ -229,7 +229,7 @@ export function EffectPanel({ effects, onAddEffect, onRemoveEffect, onUpdateEffe
     }
     
     onAddEffect(newEffect)
-    toast.success(`Added ${template.label}`)
+    toast.success(`${template.label}を追加しました`)
   }
 
   const handleMoveEffect = (fromIndex: number, toIndex: number) => {
@@ -249,11 +249,11 @@ export function EffectPanel({ effects, onAddEffect, onRemoveEffect, onUpdateEffe
 
   return (
     <div className="card">
-      <h3 className="text-lg font-semibold mb-4">Card Effects</h3>
+      <h3 className="text-lg font-semibold mb-4">カード効果</h3>
       
       {/* Effect Templates */}
       <div className="mb-6">
-        <h4 className="text-sm font-medium text-zinc-300 mb-3">Available Effects (Drag or click to add)</h4>
+        <h4 className="text-sm font-medium text-zinc-300 mb-3">利用可能な効果（ドラッグまたはクリックで追加）</h4>
         <div className="grid grid-cols-3 gap-2">
           {Object.entries(EFFECT_TEMPLATES).map(([effectType, template]) => (
             <DraggableEffect 
@@ -270,10 +270,10 @@ export function EffectPanel({ effects, onAddEffect, onRemoveEffect, onUpdateEffe
       <div className="mb-4">
         <div className="flex items-center justify-between mb-3">
           <h4 className="text-sm font-medium text-zinc-300">
-            Card Effects ({effects.length}/3)
+            カード効果 ({effects.length}/3)
           </h4>
           {effects.length === 0 && (
-            <span className="text-xs text-zinc-500">Drag effects here or click above</span>
+            <span className="text-xs text-zinc-500">ここに効果をドラッグするか上をクリック</span>
           )}
         </div>
 
@@ -282,8 +282,8 @@ export function EffectPanel({ effects, onAddEffect, onRemoveEffect, onUpdateEffe
             <div className="flex items-center justify-center h-32 text-zinc-500">
               <div className="text-center">
                 <div className="text-3xl mb-2">🎯</div>
-                <div className="text-sm">Drag effects here to build your card</div>
-                <div className="text-xs mt-1">Or click on effects above</div>
+                <div className="text-sm">ここに効果をドラッグしてカードを作成</div>
+                <div className="text-xs mt-1">または上の効果をクリック</div>
               </div>
             </div>
           ) : (
@@ -305,13 +305,13 @@ export function EffectPanel({ effects, onAddEffect, onRemoveEffect, onUpdateEffe
 
       {/* Guidelines */}
       <div className="bg-zinc-800 rounded-lg p-3">
-        <h5 className="text-sm font-medium text-zinc-300 mb-2">💡 Design Guidelines</h5>
+        <h5 className="text-sm font-medium text-zinc-300 mb-2">💡 デザインガイドライン</h5>
         <ul className="text-xs text-zinc-400 space-y-1">
-          <li>• Maximum 3 effects per card</li>
-          <li>• Effect values should be 1-10</li>
-          <li>• Consider game balance when setting values</li>
-          <li>• Attack effects target opponents by default</li>
-          <li>• Drag to reorder effects</li>
+          <li>• 1枚のカードには最大3つまでの効果</li>
+          <li>• 効果値は1〜10に設定してください</li>
+          <li>• 値を設定する際はゲームバランスを考慮</li>
+          <li>• 攻撃効果はデフォルトで相手を対象</li>
+          <li>• ドラッグして効果の順序を変更可能</li>
         </ul>
       </div>
     </div>

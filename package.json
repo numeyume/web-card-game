@@ -1,18 +1,26 @@
 {
   "name": "web-card-game-monorepo",
   "version": "0.1.0",
+  "type": "module",
   "private": true,
   "workspaces": [
     "client",
     "server"
   ],
   "scripts": {
-    "dev": "concurrently \"npm run dev:client\" \"npm run dev:server\"",
-    "dev:client": "cd client && npm run dev",
-    "dev:server": "cd server && npm run dev",
+    "dev": "./scripts/start-dev.sh",
+    "dev:safe": "./scripts/start-dev.sh --force-clean",
+    "dev:client": "./scripts/start-dev.sh --client-only",
+    "dev:server": "./scripts/start-dev.sh --server-only",
+    "stop": "./scripts/stop-dev.sh",
+    "stop:force": "./scripts/stop-dev.sh --force",
+    "dev:legacy": "concurrently \"npm run dev:client:legacy\" \"npm run dev:server:legacy\"",
+    "dev:client:legacy": "cd client && npm run dev",
+    "dev:server:legacy": "cd server && npm run dev",
     "build": "npm run build:client && npm run build:server",
     "build:client": "cd client && npm run build",
     "build:server": "cd server && npm run build",
+    "build:vercel": "cd client && npm run build",
     "test": "npm run test:client && npm run test:server",
     "test:client": "cd client && npm run test",
     "test:server": "cd server && npm run test",
@@ -25,5 +33,8 @@
   },
   "devDependencies": {
     "concurrently": "^8.2.2"
+  },
+  "dependencies": {
+    "socket.io-client": "^4.8.1"
   }
 }

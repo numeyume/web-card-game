@@ -1,18 +1,8 @@
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react'
+import React, { useEffect, useState, useCallback } from 'react'
 import { io, Socket } from 'socket.io-client'
 import toast from 'react-hot-toast'
-import type { ConnectionStatus, GameState, WebSocketMessage } from '@/types'
-
-interface WebSocketContextType {
-  socket: Socket | null
-  connectionStatus: ConnectionStatus
-  gameState: GameState
-  connect: () => void
-  disconnect: () => void
-  emit: (event: string, data?: any) => void
-}
-
-const WebSocketContext = createContext<WebSocketContextType | null>(null)
+import type { ConnectionStatus, GameState } from '@/types'
+import { WebSocketContext, type WebSocketContextType } from '@/contexts/WebSocketContext'
 
 const initialGameState: GameState = {
   room: null,
@@ -44,8 +34,9 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
 
     newSocket.on('connect', () => {
       setConnectionStatus('connected')
-      toast.success('Connected to server')
-      console.log('Connected to server with ID:', newSocket.id)
+      toast.success('サーバーに接続しました')
+      console.log('✅ Connected to server with ID:', newSocket.id)
+      console.log('🔗 Server URL:', import.meta.env.VITE_SERVER_URL || 'http://localhost:3001')
     })
 
     newSocket.on('disconnect', (reason) => {
@@ -53,26 +44,26 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
       console.log('Disconnected:', reason)
       
       if (reason === 'io server disconnect') {
-        toast.error('Server disconnected')
+        toast.error('サーバーが切断されました')
       } else {
-        toast.error('Connection lost')
+        toast.error('接続が失われました')
       }
     })
 
     newSocket.on('connect_error', (error) => {
       setConnectionStatus('error')
       console.error('Connection error:', error)
-      toast.error('Failed to connect to server')
+      toast.error('サーバーへの接続に失敗しました')
     })
 
     newSocket.on('reconnect', (attemptNumber) => {
       setConnectionStatus('connected')
-      toast.success(`Reconnected after ${attemptNumber} attempts`)
+      toast.success(`${attemptNumber}回目の試行で再接続しました`)
     })
 
     newSocket.on('reconnect_error', (error) => {
       console.error('Reconnection error:', error)
-      toast.error('Reconnection failed')
+      toast.error('再接続に失敗しました')
     })
 
     // Game state events
@@ -82,29 +73,29 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
 
     newSocket.on('roomJoined', (room) => {
       setGameState(prev => ({ ...prev, room }))
-      toast.success(`Joined room: ${room.name}`)
+      toast.success(`ルーム「${room.name}」に参加しました`)
     })
 
     newSocket.on('roomLeft', () => {
       setGameState(initialGameState)
-      toast.success('Left room')
+      toast.success('ルームから退出しました')
     })
 
     newSocket.on('playerJoined', (player) => {
-      toast.success(`${player.name} joined the game`)
+      toast.success(`${player.name}さんがゲームに参加しました`)
     })
 
     newSocket.on('playerLeft', (player) => {
-      toast.error(`${player.name} left the game`)
+      toast.error(`${player.name}さんがゲームから退出しました`)
     })
 
     newSocket.on('gameStarted', (data) => {
-      toast.success('Game started!')
+      toast.success('ゲームが開始されました！')
       console.log('Game started with deck state:', data)
     })
 
     newSocket.on('gameEnded', (results) => {
-      toast.success('Game ended!')
+      toast.success('ゲームが終了しました！')
       console.log('Game results:', results)
     })
 
@@ -115,17 +106,17 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
     })
 
     newSocket.on('cardPlayed', (data) => {
-      toast.success(`${data.playerName} played ${data.card.name}`)
+      toast.success(`${data.playerName}さんが「${data.card.name}」をプレイしました`)
       console.log('Card played:', data)
     })
 
     newSocket.on('cardBought', (data) => {
-      toast.success(`${data.playerName} bought ${data.card.name}`)
+      toast.success(`${data.playerName}さんが「${data.card.name}」を購入しました`)
       console.log('Card bought:', data)
     })
 
     newSocket.on('turnEnded', (data) => {
-      toast.success(`${data.playerName} ended turn`)
+      toast.success(`${data.playerName}さんがターンを終了しました`)
       console.log('Turn ended:', data)
     })
 
@@ -135,11 +126,11 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
     })
 
     newSocket.on('cardsDrawn', (data) => {
-      toast.success(`Drew ${data.count} cards`)
+      toast.success(`${data.count}枚のカードを引きました`)
     })
 
     newSocket.on('cardsDiscarded', (data) => {
-      toast.success(`Discarded ${data.count} cards`)
+      toast.success(`${data.count}枚のカードを捨てました`)
     })
 
     newSocket.on('gameStats', (gameStats) => {
@@ -204,6 +195,9 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
         ...prev, 
         votingSession: {
           ...prev.votingSession,
+          timeLimit: prev.votingSession?.timeLimit || 0,
+          availableCards: prev.votingSession?.availableCards || [],
+          startTime: prev.votingSession?.startTime || 0,
           isActive: false,
           results
         }
@@ -212,12 +206,23 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
 
     newSocket.on('voteRegistered', (cardVotes) => {
       console.log('Vote registered:', cardVotes)
-      toast.success(`投票が記録されました！`)
+      toast.success('投票が記録されました！')
     })
 
     newSocket.on('cardUsageStats', (stats) => {
       console.log('Card usage stats:', stats)
       setGameState(prev => ({ ...prev, cardUsageStats: stats }))
+    })
+
+    // CPU対戦用のイベントハンドラー
+    newSocket.on('gameStateUpdate', (gameState) => {
+      console.log('🎮 CPU対戦: ゲーム状態更新', gameState)
+      setGameState(prev => ({ ...prev, cpuGameState: gameState }))
+    })
+
+    newSocket.on('playerHand', (hand) => {
+      console.log('🃏 CPU対戦: 手札更新', hand)
+      setGameState(prev => ({ ...prev, playerHand: hand }))
     })
 
     newSocket.on('error', (error) => {
@@ -241,7 +246,7 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
     if (socket?.connected) {
       socket.emit(event, data)
     } else {
-      toast.error('Not connected to server')
+      toast.error('サーバーに接続されていません')
     }
   }, [socket])
 
@@ -252,7 +257,8 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
     return () => {
       disconnect()
     }
-  }, [])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []) // 依存配列を空にして無限ループを防ぐ
 
   // Heartbeat to maintain connection
   useEffect(() => {
@@ -283,10 +289,3 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
   )
 }
 
-export function useWebSocket() {
-  const context = useContext(WebSocketContext)
-  if (!context) {
-    throw new Error('useWebSocket must be used within a WebSocketProvider')
-  }
-  return context
-}

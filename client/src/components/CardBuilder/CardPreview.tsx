@@ -1,4 +1,3 @@
-import React from 'react'
 import type { Card } from '@/types'
 
 interface CardPreviewProps {
@@ -30,22 +29,22 @@ export function CardPreview({ card }: CardPreviewProps) {
   }
 
   const getEffectDescription = (effect: any) => {
-    const target = effect.target === 'self' ? '' : effect.target === 'opponent' ? ' from opponents' : ' (all players)'
+    const target = effect.target === 'self' ? '' : effect.target === 'opponent' ? '相手に' : '全プレイヤーに'
     
     switch (effect.type) {
-      case 'draw': return `Draw ${effect.value} card${effect.value > 1 ? 's' : ''}`
-      case 'gain_coin': return `+${effect.value} Coin${effect.value > 1 ? 's' : ''}`
-      case 'gain_action': return `+${effect.value} Action${effect.value > 1 ? 's' : ''}`
-      case 'gain_buy': return `+${effect.value} Buy${effect.value > 1 ? 's' : ''}`
-      case 'attack': return `Deal ${effect.value} damage${target}`
-      case 'gain_card': return `Gain a card${effect.condition ? ` (${effect.condition})` : ''}`
+      case 'draw': return `カードを${effect.value}枚引く`
+      case 'gain_coin': return `+${effect.value}コイン`
+      case 'gain_action': return `+${effect.value}アクション`
+      case 'gain_buy': return `+${effect.value}購入`
+      case 'attack': return `${target}${effect.value}ダメージ`
+      case 'gain_card': return `カードを獲得${effect.condition ? ` (${effect.condition})` : ''}`
       default: return `${effect.type}: ${effect.value}`
     }
   }
 
   return (
     <div className="card">
-      <h3 className="text-lg font-semibold mb-4">Card Preview</h3>
+      <h3 className="text-lg font-semibold mb-4">カードプレビュー</h3>
       
       <div className="relative">
         {/* Card */}
@@ -56,7 +55,7 @@ export function CardPreview({ card }: CardPreviewProps) {
             <div className="absolute top-0 left-0 right-0 bg-black/30 backdrop-blur-sm p-3">
               <div className="flex items-center justify-between">
                 <div className="text-white font-bold text-sm truncate pr-2">
-                  {card.name || 'Untitled Card'}
+                  {card.name || '無題のカード'}
                 </div>
                 <div className="flex-shrink-0 w-8 h-8 bg-white/90 rounded-full flex items-center justify-center text-black font-bold text-sm">
                   {card.cost ?? 0}
@@ -92,7 +91,7 @@ export function CardPreview({ card }: CardPreviewProps) {
                   </div>
                 ) : (
                   <div className="text-white/50 text-xs text-center">
-                    No effects added yet
+                    効果が設定されていません
                   </div>
                 )}
               </div>
@@ -101,7 +100,7 @@ export function CardPreview({ card }: CardPreviewProps) {
             {/* Footer */}
             <div className="absolute bottom-0 left-0 right-0 bg-black/30 backdrop-blur-sm p-2">
               <div className="text-white/80 text-xs text-center truncate">
-                {card.description || 'No description provided'}
+                {card.description || '説明が設定されていません'}
               </div>
             </div>
 
@@ -120,15 +119,15 @@ export function CardPreview({ card }: CardPreviewProps) {
         <div className="mt-4 bg-zinc-800 rounded-lg p-3">
           <div className="grid grid-cols-3 gap-4 text-center">
             <div>
-              <div className="text-xs text-zinc-400">Cost</div>
+              <div className="text-xs text-zinc-400">コスト</div>
               <div className="text-lg font-bold text-white">{card.cost ?? 0}</div>
             </div>
             <div>
-              <div className="text-xs text-zinc-400">Effects</div>
+              <div className="text-xs text-zinc-400">効果</div>
               <div className="text-lg font-bold text-white">{card.effects?.length || 0}/3</div>
             </div>
             <div>
-              <div className="text-xs text-zinc-400">Type</div>
+              <div className="text-xs text-zinc-400">タイプ</div>
               <div className="text-sm font-medium text-white truncate">{card.type || 'Action'}</div>
             </div>
           </div>
@@ -137,7 +136,7 @@ export function CardPreview({ card }: CardPreviewProps) {
         {/* Power Level Indicator */}
         <div className="mt-3">
           <div className="flex items-center justify-between text-xs text-zinc-400 mb-1">
-            <span>Power Level</span>
+            <span>パワーレベル</span>
             <span>{getPowerLevel(card)}/10</span>
           </div>
           <div className="w-full bg-zinc-700 rounded-full h-2">

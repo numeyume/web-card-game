@@ -1,0 +1,1149 @@
+import { useState } from 'react'
+import toast from 'react-hot-toast'
+import type { Card } from '@/types'
+import { DominionEngine } from '@/utils/DominionEngine'
+
+interface DominionGameBoardProps {
+  onExitGame: () => void
+}
+
+export function DominionGameBoard({ onExitGame }: DominionGameBoardProps) {
+  const [gameEngine] = useState(() => new DominionEngine((newGameState) => {
+    console.log('🔄 ゲーム状態更新:', {
+      turn: newGameState.turn,
+      phase: newGameState.phase,
+      currentPlayerIndex: newGameState.currentPlayerIndex,
+      currentPlayer: newGameState.players[newGameState.currentPlayerIndex]?.name,
+      isHuman: newGameState.players[newGameState.currentPlayerIndex]?.isHuman
+    })
+    setGameState(() => {
+      // 強制的に新しい参照を作成して React の再レンダリングを確実にする
+      return { ...newGameState }
+    })
+  }))
+  
+  const [gameState, setGameState] = useState<any>(null)
+  const [isLoading, setIsLoading] = useState(false)
+  const [selectedCard, setSelectedCard] = useState<string | null>(null) // 選択されたカードID
+
+  // ゲーム開始
+  const startGame = () => {
+    console.log('🎯 ドミニオンゲーム開始')
+    setIsLoading(true)
+    
+    try {
+      const newGameState = gameEngine.startGame(['プレイヤー', 'CPU'])
+      setGameState(newGameState)
+      setIsLoading(false)
+      toast.success('🎯 ドミニオンゲームが開始されました！', {
+        icon: '🎉',
+        style: { borderLeft: '4px solid #10b981' },
+        duration: 4000
+      })
+    } catch (error) {
+      console.error('❌ ゲーム開始エラー:', error)
+      setIsLoading(false)
+      toast.error('ゲームの開始に失敗しました', {
+        icon: '❌',
+        style: { borderLeft: '4px solid #ef4444' }
+      })
+    }
+  }
+
+  // アクションカードをプレイ
+  const playActionCard = (card: Card) => {
+    if (!gameEngine.isCurrentPlayerHuman()) {
+      toast.error('あなたのターンではありません')
+      return
+    }
+
+    if (gameState.phase !== 'action') {
+      toast.error('アクションカードはアクションフェーズでのみプレイできます')
+      return
+    }
+
+    try {
+      gameEngine.playActionCard(card.id)
+      toast.success(`🎯 ${card.name} をプレイしました！`)
+    } catch (error: any) {
+      console.error('❌ アクションカードプレイエラー:', error)
+      toast.error(error.message || 'アクションカードのプレイに失敗しました')
+    }
+  }
+
+  // 財宝カードをプレイ
+  const playTreasureCard = (card: Card) => {
+    console.log('🎯 財宝カードプレイ試行:', card.name, card.id)
+    console.log('現在の状態:', {
+      isHuman: gameEngine.isCurrentPlayerHuman(),
+      phase: gameState.phase,
+      coins: gameState.players?.find((p: any) => p.isHuman)?.coins
+    })
+
+    if (!gameEngine.isCurrentPlayerHuman()) {
+      toast.error('あなたのターンではありません')
+      return
+    }
+
+    if (gameState.phase !== 'buy') {
+      toast.error('財宝カードは購入フェーズでのみプレイできます')
+      return
+    }
+
+    try {
+      const result = gameEngine.playTreasureCard(card.id)
+      console.log('🎯 財宝カードプレイ結果:', result)
+      const coinEffect = card.effects?.find(e => e.type === 'gain_coin')
+      toast.success(`💰 ${card.name} をプレイ！ +${coinEffect?.value || 0}コイン`)
+    } catch (error: any) {
+      console.error('❌ 財宝カードプレイエラー:', error)
+      toast.error(error.message || '財宝カードのプレイに失敗しました')
+    }
+  }
+
+  // カード選択
+  const selectCard = (cardId: string) => {
+    if (!gameEngine.isCurrentPlayerHuman()) {
+      toast.error('あなたのターンではありません')
+      return
+    }
+
+    if (gameState.phase !== 'buy') {
+      toast.error('カードの選択は購入フェーズでのみ可能です')
+      return
+    }
+
+    const pile = gameState.supply[cardId]
+    const currentPlayer = gameState.players[gameState.currentPlayerIndex]
+    
+    // 購入可能性チェック
+    if (currentPlayer.coins < pile.cost) {
+      toast.error(`コインが不足しています（必要: ${pile.cost}, 所持: ${currentPlayer.coins}）`)
+      return
+    }
+    if (currentPlayer.buys <= 0) {
+      toast.error('購入回数が残っていません')
+      return
+    }
+    if (pile.count <= 0) {
+      toast.error('在庫がありません')
+      return
+    }
+
+    setSelectedCard(cardId)
+    toast(`🎯 ${pile.card.name} を選択しました。確定ボタンで購入してください。`)
+  }
+
+  // 全ての財宝カードを一括プレイ
+  const playAllTreasures = () => {
+    if (!gameEngine.isCurrentPlayerHuman()) {
+      toast.error('あなたのターンではありません')
+      return
+    }
+
+    if (gameState.phase !== 'buy') {
+      toast.error('財宝カードは購入フェーズでのみプレイできます')
+      return
+    }
+
+    const treasureCards = gameState.players[gameState.currentPlayerIndex].hand.filter((card: Card) => card.type === 'Treasure')
+    
+    if (treasureCards.length === 0) {
+      toast('財宝カードがありません', {
+        icon: '💰',
+        duration: 1000
+      })
+      return
+    }
+
+    let totalCoins = 0
+    treasureCards.forEach((card: Card) => {
+      try {
+        gameEngine.playTreasureCard(card.id)
+        const coinEffect = card.effects?.find(e => e.type === 'gain_coin')
+        totalCoins += coinEffect?.value || 0
+      } catch (error) {
+        console.error('財宝カードプレイエラー:', error)
+      }
+    })
+
+    toast.success(`💰 財宝一括プレイ +${totalCoins}コイン`, {
+      duration: 1500,
+      position: 'top-center'
+    })
+  }
+
+  // カード購入確定
+  const confirmPurchase = () => {
+    if (!selectedCard) return
+
+    try {
+      gameEngine.buyCard(selectedCard)
+      const pile = gameState.supply[selectedCard]
+      // 簡略化したトースト
+      toast.success(`🛒 ${pile.card.name}`, {
+        duration: 1000,
+        position: 'top-center'
+      })
+      setSelectedCard(null) // 選択解除
+    } catch (error: any) {
+      console.error('❌ カード購入エラー:', error)
+      toast.error(error.message || 'カードの購入に失敗しました', {
+        icon: '❌',
+        style: { borderLeft: '4px solid #ef4444' }
+      })
+      setSelectedCard(null)
+    }
+  }
+
+  // 選択キャンセル
+  const cancelSelection = () => {
+    setSelectedCard(null)
+    toast('選択をキャンセルしました', {
+      icon: '❌',
+      style: { borderLeft: '4px solid #6b7280' }
+    })
+  }
+
+  // フェーズ移行
+  const moveToNextPhase = () => {
+    console.log('🔄 フェーズ移行試行')
+    console.log('現在の状態:', {
+      isHuman: gameEngine.isCurrentPlayerHuman(),
+      phase: gameState.phase,
+      currentPlayer: gameState.players?.[gameState.currentPlayerIndex]?.name
+    })
+
+    if (!gameEngine.isCurrentPlayerHuman()) {
+      toast.error('あなたのターンではありません')
+      return
+    }
+
+    try {
+      const success = gameEngine.moveToNextPhase()
+      console.log('🔄 フェーズ移行結果:', success)
+      if (!success) {
+        toast.error('フェーズ移行に失敗しました', {
+          icon: '❌',
+          style: { borderLeft: '4px solid #ef4444' }
+        })
+        return
+      }
+      
+      // 状態は gameEngine のコールバックで自動更新される
+      console.log('🔄 フェーズ移行成功')
+    } catch (error: any) {
+      console.error('❌ フェーズ移行エラー:', error)
+      toast.error(error.message || 'フェーズ移行に失敗しました', {
+        icon: '❌',
+        style: { borderLeft: '4px solid #ef4444' }
+      })
+    }
+  }
+
+  // ゲーム開始前の画面
+  if (!gameState) {
+    return (
+      <div className="max-w-4xl mx-auto">
+        <div className="text-center mb-8">
+          <h1 className="text-4xl font-bold mb-4 bg-gradient-to-r from-purple-400 to-blue-500 bg-clip-text text-transparent">
+            🏰 正統ドミニオン対戦
+          </h1>
+          <p className="text-xl text-zinc-300">
+            本格的なドミニオンルールでCPUと対戦しよう
+          </p>
+        </div>
+
+        <div className="card mb-6 border-2 border-purple-500/30 bg-purple-500/5">
+          <div className="flex items-center space-x-3 mb-4">
+            <span className="text-2xl">🏰</span>
+            <h2 className="text-xl font-bold text-purple-400">正統ドミニオンについて</h2>
+          </div>
+          <div className="space-y-2 text-sm text-zinc-300">
+            <p>• <strong>正確な3フェーズ制:</strong> アクション → 購入 → クリーンアップ</p>
+            <p>• <strong>手動財宝プレイ:</strong> 購入フェーズで財宝カードを手動プレイ</p>
+            <p>• <strong>プレイエリア:</strong> プレイしたカードは専用エリアに移動</p>
+            <p>• <strong>正確なデッキ管理:</strong> 山札・手札・捨て札・プレイエリアの4領域</p>
+            <p>• <strong>戦略的CPU:</strong> 序盤・中盤・終盤で異なる購入戦略</p>
+          </div>
+        </div>
+
+        <div className="card text-center">
+          <h2 className="text-2xl font-bold mb-6">ゲーム開始</h2>
+          <div className="space-y-4">
+            <button
+              onClick={startGame}
+              disabled={isLoading}
+              className="btn-primary text-lg px-8 py-3"
+            >
+              {isLoading ? '準備中...' : '🏰 ドミニオン対戦を開始'}
+            </button>
+            <button
+              onClick={onExitGame}
+              className="btn-secondary text-lg px-8 py-3 ml-4"
+            >
+              ロビーに戻る
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  const humanPlayer = gameState.players.find((p: any) => p.isHuman)
+  const cpuPlayer = gameState.players.find((p: any) => !p.isHuman)
+  const currentPlayer = gameState.players[gameState.currentPlayerIndex]
+  const isMyTurn = gameEngine.isCurrentPlayerHuman()
+
+  // ゲーム終了画面
+  if (gameState.isGameEnded) {
+    return (
+      <div className="max-w-4xl mx-auto">
+        <div className="card text-center border-2 border-yellow-500/30 bg-yellow-500/5">
+          <h1 className="text-3xl font-bold mb-6">🏁 ゲーム終了</h1>
+          
+          <div className="mb-6">
+            <h2 className="text-2xl font-bold text-yellow-400 mb-4">
+              🏆 勝者: {gameState.winner?.name}
+            </h2>
+            <p className="text-lg text-zinc-300 mb-4">{gameState.endReason}</p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-6 mb-6">
+            <div className="card border-blue-500/30">
+              <h3 className="font-bold text-lg mb-2">👤 {humanPlayer.name}</h3>
+              <p className="text-2xl font-bold text-blue-400">{humanPlayer.totalVictoryPoints}点</p>
+              <p className="text-sm text-zinc-400">{humanPlayer.turnsPlayed}ターン</p>
+            </div>
+            <div className="card border-red-500/30">
+              <h3 className="font-bold text-lg mb-2">🤖 {cpuPlayer.name}</h3>
+              <p className="text-2xl font-bold text-red-400">{cpuPlayer.totalVictoryPoints}点</p>
+              <p className="text-sm text-zinc-400">{cpuPlayer.turnsPlayed}ターン</p>
+            </div>
+          </div>
+
+          <div className="space-x-4">
+            <button onClick={startGame} className="btn-primary">
+              🔄 もう一度プレイ
+            </button>
+            <button onClick={onExitGame} className="btn-secondary">
+              ロビーに戻る
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="max-w-6xl mx-auto p-4">
+      {/* シンプルヘッダー */}
+      <div className="flex justify-between items-center mb-6">
+        <div className="flex items-center space-x-4">
+          <h1 className="text-2xl font-bold">🏰 ドミニオン</h1>
+          <div className="text-sm text-zinc-400">ターン {gameState.turn}</div>
+          {!isMyTurn && (
+            <div className="flex items-center space-x-2 text-blue-400">
+              <span className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></span>
+              <span className="text-sm">CPUターン</span>
+            </div>
+          )}
+        </div>
+        <button onClick={onExitGame} className="btn-secondary text-sm">
+          終了
+        </button>
+      </div>
+
+      {/* ゲーム状態表示 */}
+      <div className="card mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
+          {/* プレイヤー情報 */}
+          <div className="flex items-center space-x-3">
+            <span className="text-lg font-bold">
+              {currentPlayer.isHuman ? '👤' : '🤖'} {currentPlayer.name}
+            </span>
+            {isMyTurn && (
+              <span className="px-2 py-1 bg-green-500/20 text-green-400 rounded text-sm">
+                あなたのターン
+              </span>
+            )}
+          </div>
+          
+          {/* フェーズ表示 */}
+          <div className="text-center">
+            <div className={`px-3 py-2 rounded text-sm font-medium ${
+              gameState.phase === 'action' ? 'bg-blue-500/20 text-blue-400' :
+              gameState.phase === 'buy' ? 'bg-green-500/20 text-green-400' :
+              'bg-gray-500/20 text-gray-400'
+            }`}>
+              {gameState.phase === 'action' && '🎯 アクション'}
+              {gameState.phase === 'buy' && '💰 購入'}
+              {gameState.phase === 'cleanup' && '🔄 クリーンアップ'}
+            </div>
+          </div>
+          
+          {/* リソース表示 */}
+          {isMyTurn && (
+            <div className="flex items-center space-x-4 justify-center">
+              <div className="text-center">
+                <div className="text-xl font-bold text-yellow-400">{humanPlayer.coins}</div>
+                <div className="text-xs text-yellow-300">💰</div>
+              </div>
+              <div className="text-center">
+                <div className="text-xl font-bold text-blue-400">{humanPlayer.actions}</div>
+                <div className="text-xs text-blue-300">⚡</div>
+              </div>
+              <div className="text-center">
+                <div className="text-xl font-bold text-green-400">{humanPlayer.buys}</div>
+                <div className="text-xs text-green-300">🛍</div>
+              </div>
+            </div>
+          )}
+          
+          {/* 勝利条件サマリー */}
+          <div className="text-right text-sm">
+            <div className={`font-bold ${
+              gameState.supply.province.count <= 3 ? 'text-red-400' :
+              gameState.supply.province.count <= 6 ? 'text-yellow-400' :
+              'text-green-400'
+            }`}>
+              👑 属州: {gameState.supply.province.count}/12
+            </div>
+            <div className={`text-xs ${
+              Object.values(gameState.supply).filter((pile: any) => pile.count === 0).length >= 2 ? 'text-red-400' :
+              Object.values(gameState.supply).filter((pile: any) => pile.count === 0).length >= 1 ? 'text-yellow-400' :
+              'text-green-400'
+            }`}>
+              📦 枯渇: {Object.values(gameState.supply).filter((pile: any) => pile.count === 0).length}/3
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      {/* メインゲームエリア */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+        {/* 左: 手札とアクション */}
+        <div>
+          {isMyTurn && (
+            <div className="card mb-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-bold">🃏 手札 ({humanPlayer.hand.length}枚)</h3>
+                
+                {/* 主要アクションボタン */}
+                <div className="flex space-x-2">
+                  {gameState.phase === 'buy' && (
+                    <button
+                      onClick={playAllTreasures}
+                      className="bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-1 rounded text-sm transition-colors flex items-center space-x-1"
+                    >
+                      <span>💰</span>
+                      <span>財宝一括</span>
+                    </button>
+                  )}
+                  
+                  <button
+                    onClick={moveToNextPhase}
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm transition-colors flex items-center space-x-1"
+                  >
+                    <span>➡️</span>
+                    <span>
+                      {gameState.phase === 'action' ? '購入へ' : 'ターン終了'}
+                    </span>
+                  </button>
+                </div>
+              </div>
+              
+              {/* カード購入確認 */}
+              {selectedCard && (
+                <div className="mb-4 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm">🎯 {gameState.supply[selectedCard].card.name} を選択中</span>
+                    <div className="flex space-x-2">
+                      <button
+                        onClick={confirmPurchase}
+                        className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm transition-colors"
+                      >
+                        ✅ 購入
+                      </button>
+                      <button
+                        onClick={cancelSelection}
+                        className="bg-gray-600 hover:bg-gray-700 text-white px-3 py-1 rounded text-sm transition-colors"
+                      >
+                        ❌
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+          <div className="card">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center space-x-3">
+                <span className="text-lg font-bold">
+                  {currentPlayer.isHuman ? '👤' : '🤖'} {currentPlayer.name}
+                </span>
+                {isMyTurn && (
+                  <span className="px-2 py-1 bg-green-500/20 text-green-400 rounded text-sm">
+                    あなたのターン
+                  </span>
+                )}
+              </div>
+            </div>
+            
+            <div className="flex items-center space-x-3 mb-3">
+              <div className={`px-3 py-1 rounded text-sm font-medium ${
+                gameState.phase === 'action' ? 'bg-blue-500/20 text-blue-400' :
+                gameState.phase === 'buy' ? 'bg-green-500/20 text-green-400' :
+                'bg-gray-500/20 text-gray-400'
+              }`}>
+                {gameState.phase === 'action' && '🎯 アクション'}
+                {gameState.phase === 'buy' && '💰 購入'}
+                {gameState.phase === 'cleanup' && '🔄 クリーンアップ'}
+              </div>
+            </div>
+            
+            {/* リソース表示 */}
+            {isMyTurn && (
+              <div className="grid grid-cols-3 gap-3">
+                <div className="text-center p-3 bg-yellow-500/20 rounded">
+                  <div className="text-2xl font-bold text-yellow-400">{humanPlayer.coins}</div>
+                  <div className="text-xs text-yellow-300">💰 コイン</div>
+                </div>
+                <div className="text-center p-3 bg-blue-500/20 rounded">
+                  <div className="text-2xl font-bold text-blue-400">{humanPlayer.actions}</div>
+                  <div className="text-xs text-blue-300">🎯 アクション</div>
+                </div>
+                <div className="text-center p-3 bg-green-500/20 rounded">
+                  <div className="text-2xl font-bold text-green-400">{humanPlayer.buys}</div>
+                  <div className="text-xs text-green-300">🛍 購入</div>
+                </div>
+              </div>
+            )}
+            
+            {/* アクションボタン */}
+            {isMyTurn && (
+              <div className="mt-4 space-y-2">
+                {gameState.phase === 'buy' && (
+                  <button
+                    onClick={playAllTreasures}
+                    className="w-full bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded transition-colors flex items-center justify-center space-x-2"
+                  >
+                    <span>💰</span>
+                    <span>財宝カードを全てプレイ</span>
+                  </button>
+                )}
+                
+                <button
+                  onClick={moveToNextPhase}
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded transition-colors flex items-center justify-center space-x-2"
+                >
+                  <span>➡️</span>
+                  <span>
+                    {gameState.phase === 'action' ? '購入フェーズへ' : 'ターン終了'}
+                  </span>
+                </button>
+                
+                {selectedCard && (
+                  <div className="flex space-x-2">
+                    <button
+                      onClick={confirmPurchase}
+                      className="flex-1 bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded transition-colors flex items-center justify-center space-x-1"
+                    >
+                      <span>✅</span>
+                      <span>購入</span>
+                    </button>
+                    <button
+                      onClick={cancelSelection}
+                      className="flex-1 bg-gray-600 hover:bg-gray-700 text-white px-3 py-2 rounded transition-colors flex items-center justify-center space-x-1"
+                    >
+                      <span>❌</span>
+                      <span>キャンセル</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+          
+          {/* プレイヤー統計 */}
+          <div className="card">
+            <h3 className="font-bold mb-3">📊 統計</h3>
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              <div>
+                <div className="font-medium text-blue-400">👤 {humanPlayer.name}</div>
+                <div className="space-y-1 text-xs text-zinc-400">
+                  <div>手札: {humanPlayer.hand.length}枚</div>
+                  <div>山札: {humanPlayer.deck.length}枚</div>
+                  <div>捨て札: {humanPlayer.discard.length}枚</div>
+                  <div>勝利点: {humanPlayer.totalVictoryPoints || 3}</div>
+                </div>
+              </div>
+              <div>
+                <div className="font-medium text-red-400">🤖 {cpuPlayer.name}</div>
+                <div className="space-y-1 text-xs text-zinc-400">
+                  <div>手札: {cpuPlayer.hand.length}枚</div>
+                  <div>山札: {cpuPlayer.deck.length}枚</div>
+                  <div>捨て札: {cpuPlayer.discard.length}枚</div>
+                  <div>勝利点: {cpuPlayer.totalVictoryPoints || 3}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          {/* 勝利条件 */}
+          <div className="card">
+            <h3 className="font-bold mb-3">🏆 勝利条件</h3>
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between items-center">
+                <span>👑 属州</span>
+                <span className={`font-bold ${
+                  gameState.supply.province.count <= 3 ? 'text-red-400' :
+                  gameState.supply.province.count <= 6 ? 'text-yellow-400' :
+                  'text-green-400'
+                }`}>
+                  {gameState.supply.province.count}/12
+                </span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span>📦 枯渇サプライ</span>
+                <span className={`font-bold ${
+                  Object.values(gameState.supply).filter((pile: any) => pile.count === 0).length >= 2 ? 'text-red-400' :
+                  Object.values(gameState.supply).filter((pile: any) => pile.count === 0).length >= 1 ? 'text-yellow-400' :
+                  'text-green-400'
+                }`}>
+                  {Object.values(gameState.supply).filter((pile: any) => pile.count === 0).length}/3
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        {/* 中央: 手札 */}
+        <div>
+          {isMyTurn && (
+            <div className="card">
+              <h3 className="font-bold mb-4">🃏 手札 ({humanPlayer.hand.length}枚)</h3>
+              <div className="space-y-3 max-h-96 overflow-y-auto">
+                {humanPlayer.hand.length === 0 ? (
+                  <div className="text-center py-8 text-zinc-400">
+                    <div className="text-4xl mb-2">🃏</div>
+                    <p>手札がありません</p>
+                  </div>
+                ) : (
+                  humanPlayer.hand.map((card: Card, index: number) => (
+                    <div
+                      key={`${card.id}-${index}`}
+                      className={`p-3 rounded-lg border transition-all duration-200 cursor-pointer ${
+                        card.type === 'Action' && gameState.phase === 'action' && isMyTurn
+                          ? 'border-blue-500 bg-blue-500/10 hover:bg-blue-500/20'
+                          : card.type === 'Treasure' && gameState.phase === 'buy' && isMyTurn
+                            ? 'border-yellow-500 bg-yellow-500/10 hover:bg-yellow-500/20'
+                            : card.type === 'Victory'
+                              ? 'border-purple-500/30 bg-purple-500/5'
+                              : 'border-zinc-600'
+                      }`}
+                      onClick={() => {
+                        if (card.type === 'Action' && gameState.phase === 'action' && isMyTurn) {
+                          playActionCard(card)
+                        } else if (card.type === 'Treasure' && gameState.phase === 'buy' && isMyTurn) {
+                          playTreasureCard(card)
+                        }
+                      }}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="font-medium">{card.name}</div>
+                          {/* 財宝カードの場合は購入フェーズかどうかでスタイル変更 */}
+                          <div className={`text-sm ${
+                            card.type === 'Action' ? 'text-blue-400' :
+                            card.type === 'Treasure' ? 
+                              (gameState.phase === 'buy' && isMyTurn ? 'text-yellow-400 font-bold' : 'text-yellow-400/50') :
+                            card.type === 'Victory' ? 'text-purple-400' :
+                            'text-zinc-400'
+                          }`}>
+                            {card.type === 'Action' && '⚡ アクション'}
+                            {card.type === 'Treasure' && (
+                              <span className={gameState.phase === 'buy' && isMyTurn ? '' : 'opacity-50'}>
+                                💰 +{card.effects?.find(e => e.type === 'gain_coin')?.value || 0}コイン
+                              </span>
+                            )}
+                            {card.type === 'Victory' && card.victoryPoints && (
+                              <span>👑 {card.victoryPoints}VP</span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          {card.type === 'Action' && <span className="text-blue-400">⚡</span>}
+                          {card.type === 'Treasure' && (
+                            <span className={`text-yellow-400 ${
+                              gameState.phase === 'buy' && isMyTurn ? 'animate-pulse' : 'opacity-50'
+                            }`}>💰</span>
+                          )}
+                          {card.type === 'Victory' && <span className="text-purple-400">👑</span>}
+                        </div>
+                      </div>
+                      
+                      {/* アクションカードの効果説明のみ表示 */}
+                      {card.description && card.type === 'Action' && (
+                        <div className="text-sm text-green-400 mt-2">
+                          {card.description}
+                        </div>
+                      )}
+                      
+                      {/* アクションボタン */}
+                      {card.type === 'Action' && gameState.phase === 'action' && isMyTurn && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            playActionCard(card)
+                          }}
+                          className="w-full mt-2 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded transition-colors"
+                        >
+                          🎯 プレイ
+                        </button>
+                      )}
+                      
+                      {card.type === 'Treasure' && gameState.phase === 'buy' && isMyTurn && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            playTreasureCard(card)
+                          }}
+                          className="w-full mt-2 bg-yellow-600 hover:bg-yellow-700 text-white py-2 rounded transition-colors"
+                        >
+                          💰 +{card.effects?.find(e => e.type === 'gain_coin')?.value || 0}コイン
+                        </button>
+                      )}
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+        
+        {/* 右: サプライ */}
+        <div>
+          <div className="card">
+            <h3 className="font-bold mb-4">🏪 サプライ</h3>
+            <div className="grid grid-cols-2 gap-3">
+              {Object.entries(gameState.supply).map(([cardId, pile]: [string, any]) => {
+                const canBuy = gameState.phase === 'buy' && isMyTurn && 
+                              currentPlayer.coins >= pile.cost && 
+                              currentPlayer.buys > 0 && 
+                              pile.count > 0
+                const isSelected = selectedCard === cardId
+                const isEmpty = pile.count === 0
+                const isLowStock = pile.count <= 2 && pile.count > 0
+
+                return (
+                  <div
+                    key={cardId}
+                    className={`p-3 rounded-lg border transition-all duration-200 cursor-pointer ${
+                      isEmpty
+                        ? 'border-red-500/50 bg-red-500/10 opacity-50 cursor-not-allowed'
+                        : isSelected
+                          ? 'border-yellow-500 bg-yellow-500/20 ring-2 ring-yellow-500'
+                          : canBuy 
+                            ? 'border-green-500 bg-green-500/10 hover:bg-green-500/20' 
+                            : gameState.phase === 'buy' && isMyTurn
+                              ? 'border-red-500/50 bg-red-500/5'
+                              : 'border-zinc-600 hover:border-zinc-400'
+                    } ${
+                      isLowStock && !isEmpty ? 'ring-1 ring-orange-500/50' : ''
+                    }`}
+                    onClick={() => {
+                      if (gameState.phase === 'buy' && isMyTurn && !isEmpty) {
+                        selectCard(cardId)
+                      }
+                    }}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="font-medium">{pile.card.name}</div>
+                      <div className="text-right">
+                        {pile.card.type === 'Victory' && <span className="text-yellow-400">👑</span>}
+                        {pile.card.type === 'Treasure' && <span className="text-yellow-500">💰</span>}
+                        {pile.card.type === 'Action' && <span className="text-blue-400">⚡</span>}
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center justify-between mb-2">
+                      <div className={`px-2 py-1 rounded text-sm font-bold ${
+                        canBuy ? 'bg-green-500/30 text-green-200' :
+                        gameState.phase === 'buy' && isMyTurn ? 'bg-red-500/30 text-red-200' :
+                        'bg-zinc-600/30 text-zinc-300'
+                      }`}>
+                        💳 {pile.cost}コイン
+                      </div>
+                      <span className={`text-sm ${
+                        isEmpty ? 'text-red-400' :
+                        isLowStock ? 'text-orange-400' :
+                        'text-zinc-400'
+                      }`}>
+                        {isEmpty ? '売切れ' : `${pile.count}枚`}
+                      </span>
+                    </div>
+                    
+                    {pile.card.victoryPoints && (
+                      <div className="text-sm text-yellow-400 mb-2">
+                        👑 {pile.card.victoryPoints}勝利点
+                      </div>
+                    )}
+                    
+                    {pile.card.effects && (
+                      <div className="text-sm text-green-400 mb-2">
+                        {pile.card.description}
+                      </div>
+                    )}
+                    
+                    {gameState.phase === 'buy' && isMyTurn && (
+                      <div className={`text-center text-sm p-2 rounded ${
+                        isEmpty ? 'bg-red-500/20 text-red-400' :
+                        isSelected ? 'bg-yellow-500/20 text-yellow-400' :
+                        canBuy ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'
+                      }`}>
+                        {isEmpty ? '🚫 売切れ' :
+                         isSelected ? '🎯 選択中' : 
+                         canBuy ? '✅ 購入可能' : '❌ 購入不可'}
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        </div>
+      </div>
+          {/* 勝利条件進捗 */}
+          <div className="card border-2 border-yellow-500/30 bg-yellow-500/5">
+            <h3 className="font-bold text-lg mb-4 flex items-center">
+              🏆 勝利条件
+              <span className="ml-2 text-sm text-yellow-400">- ゲーム終了まで -</span>
+            </h3>
+            <div className="grid grid-cols-1 gap-4">
+              {/* 属州残数 */}
+              <div className="flex items-center justify-between p-3 rounded-lg bg-purple-500/10 border border-purple-500/30">
+                <div className="flex items-center space-x-2">
+                  <span className="text-2xl">👑</span>
+                  <div>
+                    <div className="text-sm font-medium text-purple-300">属州</div>
+                    <div className="text-xs text-zinc-400">最高勝利点カード</div>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className={`text-lg font-bold ${
+                    gameState.supply.province.count <= 3 ? 'text-red-400 animate-pulse' :
+                    gameState.supply.province.count <= 6 ? 'text-yellow-400' :
+                    'text-green-400'
+                  }`}>
+                    {gameState.supply.province.count}
+                  </div>
+                  <div className="text-xs text-zinc-500">/ 12枚</div>
+                </div>
+              </div>
+              
+              {/* サプライ枯渇進捗 */}
+              <div className="flex items-center justify-between p-3 rounded-lg bg-red-500/10 border border-red-500/30">
+                <div className="flex items-center space-x-2">
+                  <span className="text-2xl">📦</span>
+                  <div>
+                    <div className="text-sm font-medium text-red-300">枯渇サプライ</div>
+                    <div className="text-xs text-zinc-400">3種類で終了</div>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className={`text-lg font-bold ${
+                    Object.values(gameState.supply).filter((pile: any) => pile.count === 0).length >= 2 ? 'text-red-400 animate-pulse' :
+                    Object.values(gameState.supply).filter((pile: any) => pile.count === 0).length >= 1 ? 'text-yellow-400' :
+                    'text-green-400'
+                  }`}>
+                    {Object.values(gameState.supply).filter((pile: any) => pile.count === 0).length}
+                  </div>
+                  <div className="text-xs text-zinc-500">/ 3種類</div>
+                </div>
+              </div>
+            </div>
+            
+            {/* 危険度インジケーター */}
+            <div className="mt-3 flex items-center space-x-2">
+              <span className="text-sm text-zinc-300">ゲーム終了まで:</span>
+              <div className={`px-3 py-1 rounded-full text-xs font-medium ${
+                (gameState.supply.province.count === 0 || Object.values(gameState.supply).filter((pile: any) => pile.count === 0).length >= 3)
+                  ? 'bg-red-500 text-white animate-pulse'
+                  : (gameState.supply.province.count <= 3 || Object.values(gameState.supply).filter((pile: any) => pile.count === 0).length >= 2)
+                    ? 'bg-yellow-500/80 text-yellow-100'
+                    : (gameState.supply.province.count <= 6 || Object.values(gameState.supply).filter((pile: any) => pile.count === 0).length >= 1)
+                      ? 'bg-orange-500/80 text-orange-100'
+                      : 'bg-green-500/80 text-green-100'
+              }`}>
+                {(gameState.supply.province.count === 0 || Object.values(gameState.supply).filter((pile: any) => pile.count === 0).length >= 3)
+                  ? '🚨 ゲーム終了!'
+                  : (gameState.supply.province.count <= 3 || Object.values(gameState.supply).filter((pile: any) => pile.count === 0).length >= 2)
+                    ? '⚠️ 危険'
+                    : (gameState.supply.province.count <= 6 || Object.values(gameState.supply).filter((pile: any) => pile.count === 0).length >= 1)
+                      ? '⚡ 注意'
+                      : '✅ 安全'
+                }
+              </div>
+            </div>
+          </div>
+
+          {/* 改善されたターンアクション */}
+          {isMyTurn && (
+            <div className={`card border-2 transition-all duration-300 ${
+              gameState.phase === 'action' 
+                ? 'border-blue-500/50 bg-blue-500/10 shadow-lg shadow-blue-500/20' 
+                : 'border-green-500/50 bg-green-500/10 shadow-lg shadow-green-500/20'
+            }`}>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-bold text-lg flex items-center">
+                  <span className="text-2xl mr-2">
+                    {gameState.phase === 'action' ? '🎯' : '💰'}
+                  </span>
+                  <span>
+                    {gameState.phase === 'action' ? 'アクションフェーズ' : '購入フェーズ'}
+                  </span>
+                </h3>
+                
+                {/* フェーズ進捗バー */}
+                <div className="flex items-center space-x-1">
+                  <div className={`w-3 h-3 rounded-full ${
+                    gameState.phase === 'action' ? 'bg-blue-500' : 'bg-blue-500/30'
+                  }`}></div>
+                  <div className="w-6 h-0.5 bg-zinc-600"></div>
+                  <div className={`w-3 h-3 rounded-full ${
+                    gameState.phase === 'buy' ? 'bg-green-500' : 'bg-green-500/30'
+                  }`}></div>
+                  <div className="w-6 h-0.5 bg-zinc-600"></div>
+                  <div className={`w-3 h-3 rounded-full ${
+                    gameState.phase === 'cleanup' ? 'bg-purple-500' : 'bg-purple-500/30'
+                  }`}></div>
+                </div>
+              </div>
+              
+              <div className="space-y-3">
+                {gameState.phase === 'action' && (
+                  <div className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/30">
+                    <div className="text-sm text-blue-300 mb-2">アクションカードをプレイするか、購入フェーズに進んでください</div>
+                    <button
+                      onClick={moveToNextPhase}
+                      className="w-full bg-gradient-to-r from-blue-600 to-green-600 hover:from-blue-700 hover:to-green-700 text-white px-4 py-3 rounded-lg font-medium transition-all duration-200 flex items-center justify-center space-x-2 transform hover:scale-105"
+                    >
+                      <span>💰</span>
+                      <span>購入フェーズへ進む</span>
+                      <span>→</span>
+                    </button>
+                  </div>
+                )}
+                
+                {gameState.phase === 'buy' && (
+                  <div className="space-y-3">
+                    <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/30">
+                      <div className="text-sm text-green-300 mb-2">財宝カードをプレイしてコインを獲得、カードを購入してください</div>
+                      
+                      {selectedCard && (
+                        <div className="flex space-x-2 mb-3">
+                          <button
+                            onClick={confirmPurchase}
+                            className="flex-1 bg-gradient-to-r from-yellow-600 to-orange-600 hover:from-yellow-700 hover:to-orange-700 text-white px-4 py-2 rounded-lg font-medium transition-all duration-200 flex items-center justify-center space-x-2 transform hover:scale-105"
+                          >
+                            <span>🛒</span>
+                            <span>購入確定</span>
+                          </button>
+                          <button
+                            onClick={cancelSelection}
+                            className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-medium transition-colors flex items-center space-x-1"
+                          >
+                            <span>❌</span>
+                            <span>キャンセル</span>
+                          </button>
+                        </div>
+                      )}
+                      
+                      <button
+                        onClick={moveToNextPhase}
+                        className="w-full bg-gradient-to-r from-green-600 to-purple-600 hover:from-green-700 hover:to-purple-700 text-white px-4 py-3 rounded-lg font-medium transition-all duration-200 flex items-center justify-center space-x-2 transform hover:scale-105"
+                      >
+                        <span>🔄</span>
+                        <span>ターン終了 - 相手のターンへ</span>
+                        <span>→</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* 右側: 手札とリソース */}
+        <div className="lg:col-span-1 space-y-4">
+          {/* リソース情報 - 特大表示 */}
+          {isMyTurn && (
+            <div className="card border-2 border-yellow-500/50 bg-yellow-500/5 shadow-lg">
+              <h3 className="font-bold text-lg mb-4 text-center">💰 リソース</h3>
+              <div className="grid grid-cols-1 gap-4">
+                <div className="flex items-center justify-center space-x-3 p-4 rounded-lg bg-yellow-500/20 border-2 border-yellow-500/50">
+                  <span className="text-5xl">💰</span>
+                  <div className="text-center">
+                    <div className="text-5xl font-bold text-yellow-400">{humanPlayer.coins}</div>
+                    <div className="text-sm text-yellow-300">コイン</div>
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="flex items-center justify-center space-x-2 p-3 rounded-lg bg-blue-500/20 border border-blue-500/30">
+                    <span className="text-3xl">🎯</span>
+                    <div className="text-center">
+                      <div className="text-3xl font-bold text-blue-400">{humanPlayer.actions}</div>
+                      <div className="text-xs text-blue-300">アクション</div>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center justify-center space-x-2 p-3 rounded-lg bg-green-500/20 border border-green-500/30">
+                    <span className="text-3xl">🛍</span>
+                    <div className="text-center">
+                      <div className="text-3xl font-bold text-green-400">{humanPlayer.buys}</div>
+                      <div className="text-xs text-green-300">購入</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+          
+          {/* 手札 */}
+          <div className="card border-2 border-green-500/50 bg-green-500/5">
+            <h3 className="font-bold text-lg mb-4">🃏 手札 ({humanPlayer.hand.length}枚)</h3>
+            <div className="space-y-3 max-h-96 overflow-y-auto">
+              {humanPlayer.hand.length === 0 ? (
+                <div className="text-center py-8 text-zinc-400">
+                  <div className="text-4xl mb-2">🃏</div>
+                  <p>手札がありません</p>
+                </div>
+              ) : (
+                humanPlayer.hand.map((card: Card, index: number) => (
+                  <div
+                    key={`${card.id}-${index}`}
+                    className={`p-3 rounded-lg border transition-all duration-200 relative ${
+                      card.type === 'Action' && gameState.phase === 'action' && isMyTurn
+                        ? 'border-blue-500/50 bg-blue-500/10 hover:bg-blue-500/20 cursor-pointer transform hover:scale-105 shadow-lg hover:shadow-blue-500/20'
+                        : card.type === 'Treasure' && gameState.phase === 'buy' && isMyTurn
+                          ? 'border-yellow-500/50 bg-yellow-500/10 hover:bg-yellow-500/20 cursor-pointer transform hover:scale-105 shadow-lg hover:shadow-yellow-500/20'
+                          : card.type === 'Victory'
+                            ? 'border-purple-500/30 bg-purple-500/5'
+                            : 'border-zinc-600'
+                    }`}
+                    onClick={() => {
+                      if (card.type === 'Action' && gameState.phase === 'action' && isMyTurn) {
+                        playActionCard(card)
+                      } else if (card.type === 'Treasure' && gameState.phase === 'buy' && isMyTurn) {
+                        playTreasureCard(card)
+                      }
+                    }}
+                  >
+                    {/* カードタイプアイコン */}
+                    <div className="absolute top-2 right-2 text-lg">
+                      {card.type === 'Action' && <span className="text-blue-400">⚡</span>}
+                      {card.type === 'Treasure' && <span className="text-yellow-400">💰</span>}
+                      {card.type === 'Victory' && <span className="text-purple-400">👑</span>}
+                    </div>
+                    
+                    <div className="text-sm font-medium pr-6">{card.name}</div>
+                    <div className={`text-xs font-medium ${
+                      card.type === 'Action' ? 'text-blue-400' :
+                      card.type === 'Treasure' ? 'text-yellow-400' :
+                      card.type === 'Victory' ? 'text-purple-400' :
+                      'text-zinc-400'
+                    }`}>
+                      {card.type === 'Action' && '⚡ アクション'}
+                      {card.type === 'Treasure' && '💰 財宝'}
+                      {card.type === 'Victory' && '👑 勝利点'}
+                    </div>
+                    
+                    {card.description && (
+                      <div className="text-xs text-green-400 mt-2 p-1 rounded bg-green-500/10">
+                        {card.description}
+                      </div>
+                    )}
+                    
+                    {card.victoryPoints && (
+                      <div className="text-xs text-purple-400 mt-1 flex items-center">
+                        👑 {card.victoryPoints}勝利点
+                      </div>
+                    )}
+                    
+                    {/* アクションボタン */}
+                    {card.type === 'Action' && gameState.phase === 'action' && isMyTurn && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          playActionCard(card)
+                        }}
+                        className="w-full mt-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white text-xs py-2 px-3 rounded-lg transition-all duration-200 flex items-center justify-center space-x-1 transform hover:scale-105"
+                      >
+                        <span>🎯</span>
+                        <span>プレイ</span>
+                      </button>
+                    )}
+                    
+                    {card.type === 'Treasure' && gameState.phase === 'buy' && isMyTurn && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          playTreasureCard(card)
+                        }}
+                        className="w-full mt-2 bg-gradient-to-r from-yellow-600 to-orange-600 hover:from-yellow-700 hover:to-orange-700 text-white text-xs py-2 px-3 rounded-lg transition-all duration-200 flex items-center justify-center space-x-1 transform hover:scale-105"
+                      >
+                        <span>💰</span>
+                        <span>+{card.effects?.find(e => e.type === 'gain_coin')?.value || 0}コイン</span>
+                      </button>
+                    )}
+                    
+                    {/* 非アクティブ状態表示 */}
+                    {card.type === 'Action' && (gameState.phase !== 'action' || !isMyTurn) && (
+                      <div className="mt-2 text-xs text-center text-gray-400 bg-gray-500/10 p-1 rounded">
+                        🚫 アクションフェーズでのみ使用可
+                      </div>
+                    )}
+                    
+                    {card.type === 'Treasure' && (gameState.phase !== 'buy' || !isMyTurn) && (
+                      <div className="mt-2 text-xs text-center text-gray-400 bg-gray-500/10 p-1 rounded">
+                        🚫 購入フェーズでのみ使用可
+                      </div>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ゲームログ（下部） */}
+      <div className="mt-6">
+        <div className="card">
+          <h3 className="font-bold text-lg mb-4">📜 ゲームログ</h3>
+          <div className="space-y-1 max-h-40 overflow-y-auto">
+            {gameState.log && gameState.log.length > 0 ? (
+              gameState.log.slice(-10).map((entry: any, index: number) => (
+                <div key={index} className="text-sm text-zinc-300">
+                  <span className="text-zinc-500">T{entry.turn}:</span> 
+                  <span className="font-medium">{entry.player}</span> - {entry.action}
+                  {entry.details && <span className="text-zinc-400"> ({entry.details})</span>}
+                </div>
+              ))
+            ) : (
+              <div className="text-center py-4 text-zinc-400">
+                <span className="text-xl">📜</span>
+                <p className="text-sm">ゲームログはここに表示されます</p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+export default DominionGameBoard

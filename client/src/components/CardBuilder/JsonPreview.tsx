@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import type { Card } from '@/types'
 
 interface JsonPreviewProps {
@@ -12,7 +12,7 @@ export function JsonPreview({ card }: JsonPreviewProps) {
   const generateCardJson = (): string => {
     const cardJson = {
       id: `custom_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      name: card.name || 'Untitled Card',
+      name: card.name || '無題のカード',
       cost: card.cost ?? 0,
       type: card.type || 'Action',
       effects: card.effects || [],
@@ -107,13 +107,13 @@ export function JsonPreview({ card }: JsonPreviewProps) {
   return (
     <div className="card">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold">JSON Preview</h3>
+        <h3 className="text-lg font-semibold">JSONプレビュー</h3>
         <div className="flex space-x-2">
           <button
             onClick={() => setIsExpanded(!isExpanded)}
             className="text-sm text-zinc-400 hover:text-white transition-colors"
           >
-            {isExpanded ? '🔼 Collapse' : '🔽 Expand'}
+            {isExpanded ? '🔼 縮小' : '🔽 展開'}
           </button>
         </div>
       </div>
@@ -129,7 +129,7 @@ export function JsonPreview({ card }: JsonPreviewProps) {
             {validation.isValid ? '✅' : '❌'}
           </span>
           <span className="font-medium">
-            {validation.isValid ? 'Valid Card' : 'Validation Errors'}
+            {validation.isValid ? '有効なカード' : 'バリデーションエラー'}
           </span>
         </div>
         
@@ -147,7 +147,7 @@ export function JsonPreview({ card }: JsonPreviewProps) {
       {/* JSON Content */}
       <div className="bg-zinc-800 rounded-lg overflow-hidden">
         <div className="flex items-center justify-between bg-zinc-700 px-3 py-2 border-b border-zinc-600">
-          <span className="text-sm font-medium text-zinc-300">Card JSON Schema</span>
+          <span className="text-sm font-medium text-zinc-300">カードJSONスキーマ</span>
           <div className="flex space-x-2">
             <button
               onClick={copyToClipboard}
@@ -157,13 +157,13 @@ export function JsonPreview({ card }: JsonPreviewProps) {
                   : 'bg-zinc-600 hover:bg-zinc-500 text-zinc-300'
               }`}
             >
-              {copied ? '✓ Copied!' : '📋 Copy'}
+              {copied ? '✓ コピー済み！' : '📋 コピー'}
             </button>
             <button
               onClick={downloadJson}
               className="text-xs px-2 py-1 bg-zinc-600 hover:bg-zinc-500 text-zinc-300 rounded transition-colors"
             >
-              💾 Download
+              💾 ダウンロード
             </button>
           </div>
         </div>
@@ -182,29 +182,29 @@ export function JsonPreview({ card }: JsonPreviewProps) {
       {/* JSON Stats */}
       <div className="mt-4 grid grid-cols-2 gap-4 text-sm">
         <div className="bg-zinc-800 rounded-lg p-3">
-          <div className="text-zinc-400 text-xs mb-1">Size</div>
+          <div className="text-zinc-400 text-xs mb-1">サイズ</div>
           <div className="font-medium">
             {new Blob([jsonString]).size} bytes
           </div>
         </div>
         <div className="bg-zinc-800 rounded-lg p-3">
-          <div className="text-zinc-400 text-xs mb-1">Properties</div>
+          <div className="text-zinc-400 text-xs mb-1">プロパティ</div>
           <div className="font-medium">
-            {Object.keys(JSON.parse(jsonString)).length} fields
+            {Object.keys(JSON.parse(jsonString)).length} フィールド
           </div>
         </div>
       </div>
 
       {/* Schema Info */}
       <div className="mt-4 bg-zinc-800 rounded-lg p-3">
-        <h4 className="text-sm font-medium text-zinc-300 mb-2">📋 Schema Information</h4>
+        <h4 className="text-sm font-medium text-zinc-300 mb-2">📋 スキーマ情報</h4>
         <div className="text-xs text-zinc-400 space-y-1">
-          <div><span className="text-zinc-300 font-medium">id:</span> Unique identifier (auto-generated)</div>
-          <div><span className="text-zinc-300 font-medium">name:</span> Display name (required, max 30 chars)</div>
-          <div><span className="text-zinc-300 font-medium">cost:</span> Mana cost (0-10)</div>
-          <div><span className="text-zinc-300 font-medium">type:</span> Card category (Action/Treasure/Victory/Custom)</div>
-          <div><span className="text-zinc-300 font-medium">effects:</span> Array of game effects (max 3)</div>
-          <div><span className="text-zinc-300 font-medium">description:</span> Flavor text (required, max 200 chars)</div>
+          <div><span className="text-zinc-300 font-medium">id:</span> 一意識別子（自動生成）</div>
+          <div><span className="text-zinc-300 font-medium">name:</span> 表示名（必須、最大30文字）</div>
+          <div><span className="text-zinc-300 font-medium">cost:</span> マナコスト（0-10）</div>
+          <div><span className="text-zinc-300 font-medium">type:</span> カードカテゴリ（アクション/財宝/勝利/カスタム）</div>
+          <div><span className="text-zinc-300 font-medium">effects:</span> ゲーム効果の配列（最大3つ）</div>
+          <div><span className="text-zinc-300 font-medium">description:</span> フレーバーテキスト（必須、最大200文字）</div>
         </div>
       </div>
 
@@ -212,11 +212,11 @@ export function JsonPreview({ card }: JsonPreviewProps) {
       <div className="mt-4">
         <details className="bg-zinc-800 rounded-lg">
           <summary className="p-3 cursor-pointer text-sm font-medium text-zinc-300 hover:text-white transition-colors">
-            📥 Import JSON Card
+            📥 JSONカードのインポート
           </summary>
           <div className="p-3 border-t border-zinc-700">
             <textarea
-              placeholder="Paste card JSON here to import..."
+              placeholder="インポートするカードJSONをここに貼り付け..."
               className="w-full h-20 px-3 py-2 bg-zinc-700 border border-zinc-600 rounded text-white placeholder-zinc-400 text-xs font-mono resize-none focus:outline-none focus:ring-2 focus:ring-purple-500"
               onPaste={(e) => {
                 try {

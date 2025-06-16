@@ -1,4 +1,3 @@
-import React from 'react'
 import type { Card } from '@/types'
 
 interface CardValidatorProps {
@@ -12,8 +11,8 @@ export function CardValidator({ errors }: CardValidatorProps) {
         <div className="flex items-center space-x-2 text-green-300">
           <span className="text-xl">✅</span>
           <div>
-            <h3 className="font-semibold">Card is Valid!</h3>
-            <p className="text-sm text-green-400">All validation checks passed. Ready to save.</p>
+            <h3 className="font-semibold">カードは有効です！</h3>
+            <p className="text-sm text-green-400">すべてのバリデーションが成功しました。保存準備完了です。</p>
           </div>
         </div>
       </div>
@@ -25,7 +24,7 @@ export function CardValidator({ errors }: CardValidatorProps) {
       <div className="flex items-start space-x-2 text-red-300">
         <span className="text-xl mt-0.5">❌</span>
         <div className="flex-1">
-          <h3 className="font-semibold mb-2">Validation Errors</h3>
+          <h3 className="font-semibold mb-2">バリデーションエラー</h3>
           <ul className="space-y-1">
             {errors.map((error, index) => (
               <li key={index} className="text-sm text-red-400 flex items-start space-x-2">
@@ -41,43 +40,43 @@ export function CardValidator({ errors }: CardValidatorProps) {
 }
 
 // Validation utility class
-export class CardValidator {
+export class CardValidationEngine {
   static validate(card: Partial<Card>): string[] {
     const errors: string[] = []
 
     // Name validation
     if (!card.name || card.name.trim().length === 0) {
-      errors.push('Card name is required')
+      errors.push('カード名は必須です')
     } else if (card.name.length > 30) {
-      errors.push('Card name must be 30 characters or less')
+      errors.push('カード名は30文字以内で入力してください')
     } else if (card.name.length < 2) {
-      errors.push('Card name must be at least 2 characters')
+      errors.push('カード名は2文字以上で入力してください')
     }
 
     // Cost validation
     if (card.cost !== undefined) {
       if (card.cost < 0) {
-        errors.push('Cost cannot be negative')
+        errors.push('コストはマイナスにできません')
       } else if (card.cost > 10) {
-        errors.push('Cost cannot exceed 10')
+        errors.push('コストは10を超えることはできません')
       }
     }
 
     // Description validation
     if (!card.description || card.description.trim().length === 0) {
-      errors.push('Description is required')
+      errors.push('説明文は必須です')
     } else if (card.description.length > 200) {
-      errors.push('Description must be 200 characters or less')
+      errors.push('説明文は200文字以内で入力してください')
     } else if (card.description.length < 10) {
-      errors.push('Description should be at least 10 characters for clarity')
+      errors.push('説明文は明確さのために10文字以上で入力することをお勧めします')
     }
 
     // Effects validation
     if (card.effects) {
       if (card.effects.length === 0) {
-        errors.push('At least one effect is recommended')
+        errors.push('少なくとも1つの効果を設定することをお勧めします')
       } else if (card.effects.length > 3) {
-        errors.push('Maximum 3 effects allowed per card')
+        errors.push('1枚のカードには最大3つまでの効果しか設定できません')
       }
 
       // Individual effect validation
@@ -85,20 +84,20 @@ export class CardValidator {
         const effectNumber = index + 1
 
         if (!effect.type) {
-          errors.push(`Effect ${effectNumber}: Type is required`)
+          errors.push(`効果${effectNumber}: タイプの指定が必要です`)
         }
 
         if (effect.value === undefined || effect.value === null) {
-          errors.push(`Effect ${effectNumber}: Value is required`)
+          errors.push(`効果${effectNumber}: 値の指定が必要です`)
         } else if (effect.value < 1) {
-          errors.push(`Effect ${effectNumber}: Value must be at least 1`)
+          errors.push(`効果${effectNumber}: 値は1以上である必要があります`)
         } else if (effect.value > 10) {
-          errors.push(`Effect ${effectNumber}: Value cannot exceed 10`)
+          errors.push(`効果${effectNumber}: 値は10を超えることはできません`)
         }
 
         // Type-specific validations
         if (effect.type === 'attack' && effect.target === 'self') {
-          errors.push(`Effect ${effectNumber}: Attack effects should not target self`)
+          errors.push(`効果${effectNumber}: 攻撃効果は自分を対象にすべきではありません`)
         }
 
         if (effect.type === 'gain_card' && !effect.condition) {
@@ -108,7 +107,7 @@ export class CardValidator {
 
         // Balance checking
         if (this.isEffectOverpowered(effect, card.cost || 0)) {
-          errors.push(`Effect ${effectNumber}: May be overpowered for cost ${card.cost || 0}`)
+          errors.push(`効果${effectNumber}: コスト${card.cost || 0}に対して強すぎる可能性があります`)
         }
       })
 
@@ -117,7 +116,7 @@ export class CardValidator {
       const cost = card.cost || 0
       
       if (powerLevel > cost + 3) {
-        errors.push(`Card may be overpowered: power level ${powerLevel} vs cost ${cost}`)
+        errors.push(`カードが強すぎる可能性があります: パワーレベル${powerLevel} vs コスト${cost}`)
       }
     }
 
@@ -229,15 +228,15 @@ export class CardValidator {
 
     // Generate recommendations
     if (card.effects && card.effects.length === 1) {
-      recommendations.push('Consider adding more effects for better card complexity')
+      recommendations.push('カードの複雑さを高めるために、さらに効果を追加することを検討してください')
     }
 
     if (powerLevel < (card.cost || 0) - 1) {
-      recommendations.push('Card might be underpowered for its cost')
+      recommendations.push('コストに対してカードの性能が低い可能性があります')
     }
 
     if (!card.effects || card.effects.length === 0) {
-      recommendations.push('Add at least one effect to make the card interesting')
+      recommendations.push('カードを面白くするために、少なくとも1つの効果を追加してください')
     }
 
     if (card.type === 'Action' && card.effects) {
@@ -245,7 +244,7 @@ export class CardValidator {
         ['gain_action', 'draw'].includes(e.type)
       )
       if (!hasActionEffect) {
-        recommendations.push('Action cards often benefit from +Actions or +Cards')
+        recommendations.push('アクションカードは+アクションや+カードがあると効果的です')
       }
     }
 

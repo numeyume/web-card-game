@@ -1,67 +1,72 @@
-import React, { useState, useEffect } from 'react'
-import { useWebSocket } from './WebSocketProvider'
-import toast from 'react-hot-toast'
+import { useEffect } from 'react'
+import { useWebSocket } from '@/hooks/useWebSocket'
+// import toast from 'react-hot-toast'
 
-interface Room {
-  id: string
-  name: string
-  playerCount: number
-  maxPlayers: number
-  status: 'waiting' | 'playing' | 'finished'
-  createdAt: string
-}
+// interface Room {
+//   id: string
+//   name: string
+//   playerCount: number
+//   maxPlayers: number
+//   status: 'waiting' | 'playing' | 'finished'
+//   createdAt: string
+// }
 
 interface LobbyProps {
   onJoinGame: () => void
+  onStartDominion: () => void
+  onStartDominionDirect: () => void
+  onOpenCardBuilder: () => void
+  onOpenCollection: () => void
+  onOpenTutorial: () => void
 }
 
-export function Lobby({ onJoinGame }: LobbyProps) {
-  const { emit, connectionStatus } = useWebSocket()
-  const [rooms, setRooms] = useState<Room[]>([])
-  const [loading, setLoading] = useState(false)
-  const [showCreateRoom, setShowCreateRoom] = useState(false)
-  const [roomName, setRoomName] = useState('')
-  const [maxPlayers, setMaxPlayers] = useState(4)
+export function Lobby({ onJoinGame: _onJoinGame, onStartDominion, onStartDominionDirect, onOpenCardBuilder, onOpenTutorial }: LobbyProps) {
+  const { connectionStatus } = useWebSocket()
+  // const [_rooms] = useState<Room[]>([])
+  // const [loading] = useState(false)
+  // const [showCreateRoom] = useState(false)
+  // const [_roomName] = useState('')
+  // const [_maxPlayers] = useState(4)
 
-  // Fetch rooms from API
+  // Fetch rooms from API (disabled for production)
+  /*
   const fetchRooms = async () => {
     try {
       setLoading(true)
-      // Temporarily disable API call for debugging
-      // const response = await fetch('/api/rooms')
-      // const data = await response.json()
+      const response = await fetch('http://localhost:3001/api/rooms')
+      const data = await response.json()
       
-      // if (data.success) {
-      //   setRooms(data.data || [])
-      // } else {
-      //   toast.error(data.error || 'Failed to fetch rooms')
-      // }
-      
-      // Set dummy data for now
-      setRooms([])
+      if (Array.isArray(data)) {
+        setRooms(data)
+      } else {
+        toast.error('ルーム情報の取得に失敗しました')
+        setRooms([])
+      }
     } catch (error) {
       console.error('Error fetching rooms:', error)
-      toast.error('Failed to connect to server')
+      toast.error('サーバーに接続できませんでした')
     } finally {
       setLoading(false)
     }
   }
+  */
 
-  // Auto-refresh rooms every 5 seconds
+  // Auto-refresh rooms every 5 seconds (disabled to prevent errors)
   useEffect(() => {
-    fetchRooms()
-    const interval = setInterval(fetchRooms, 5000)
-    return () => clearInterval(interval)
+    // fetchRooms() // Disabled until rooms API is fully implemented
+    // const interval = setInterval(fetchRooms, 5000)
+    // return () => clearInterval(interval)
   }, [])
 
+  /*
   const handleCreateRoom = async () => {
     if (!roomName.trim()) {
-      toast.error('Room name is required')
+      toast.error('ルーム名は必須です')
       return
     }
 
     try {
-      const response = await fetch('/api/rooms', {
+      const response = await fetch('http://localhost:3003/api/rooms', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -85,7 +90,7 @@ export function Lobby({ onJoinGame }: LobbyProps) {
       
       if (data.success) {
         const room = data.data
-        toast.success(`Room "${room.name}" created!`)
+        toast.success(`ルーム「${room.name}」を作成しました！`)
         
         // Join the room via WebSocket
         emit('joinRoom', room.id)
@@ -96,26 +101,28 @@ export function Lobby({ onJoinGame }: LobbyProps) {
         setShowCreateRoom(false)
         setRoomName('')
       } else {
-        toast.error(data.error || 'Failed to create room')
+        toast.error(data.error || 'ルームの作成に失敗しました')
       }
     } catch (error) {
       console.error('Error creating room:', error)
-      toast.error('Failed to create room')
+      toast.error('ルームの作成に失敗しました')
     }
   }
 
   const handleJoinRoom = (roomId: string) => {
     if (connectionStatus !== 'connected') {
-      toast.error('Not connected to server')
+      toast.error('サーバーに接続されていません')
       return
     }
 
     emit('joinRoom', roomId)
     onJoinGame()
-    toast.success('Joining room...')
+    toast.success('ルームに参加中...')
   }
+  */
 
-  const handleQuickMatch = () => {
+  /*
+  const _handleQuickMatch = () => {
     // Find a waiting room with space
     const availableRoom = rooms.find(room => 
       room.status === 'waiting' && room.playerCount < room.maxPlayers
@@ -125,22 +132,23 @@ export function Lobby({ onJoinGame }: LobbyProps) {
       handleJoinRoom(availableRoom.id)
     } else {
       // Create a new room for quick match
-      setRoomName('Quick Match Room')
+      setRoomName('クイックマッチルーム')
       setMaxPlayers(4)
       handleCreateRoom()
     }
   }
+  */
 
   return (
     <div className="max-w-6xl mx-auto">
       {/* Header */}
       <div className="text-center mb-8">
         <h1 className="text-5xl font-bold mb-4 bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
-          Web Card Game
+          🎴 ウェブカードゲーム
         </h1>
         <p className="text-xl text-zinc-300 max-w-2xl mx-auto">
-          Create custom cards and battle with 2-4 players in real-time multiplayer matches.
-          Build your deck, master the meta, and climb the leaderboards!
+          オリジナルカードを作成して、2-4人でリアルタイム対戦。
+          あなたの戦略とクリエイティビティで勝利を目指しましょう！
         </p>
       </div>
 
@@ -155,183 +163,122 @@ export function Lobby({ onJoinGame }: LobbyProps) {
             connectionStatus === 'connected' ? 'bg-green-400' : 'bg-red-400'
           }`}></div>
           <span className="text-sm font-medium">
-            {connectionStatus === 'connected' ? 'Connected' : 'Disconnected'}
+            {connectionStatus === 'connected' ? '接続済み' : '未接続'}
           </span>
         </div>
       </div>
 
-      {/* Quick Actions */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-        <div className="card">
-          <h2 className="text-2xl font-bold mb-4">Quick Start</h2>
-          <div className="space-y-4">
+      {/* Game Options */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+        <div className="card border-2 border-green-500/30 bg-gradient-to-br from-green-500/5 to-blue-500/5">
+          <div className="text-center py-6">
+            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-green-500/20 flex items-center justify-center">
+              <span className="text-2xl">📚</span>
+            </div>
+            <h3 className="text-lg font-bold mb-2 text-green-400">遊び方</h3>
+            <p className="text-sm text-zinc-400 mb-4">ドミニオンのルールと操作方法を学習</p>
             <button 
-              onClick={handleQuickMatch}
-              disabled={connectionStatus !== 'connected'}
-              className="button-primary w-full py-3 text-lg"
+              onClick={onOpenTutorial}
+              className="button-secondary w-full"
             >
-              🎮 Quick Match
+              📚 チュートリアル
             </button>
-            <p className="text-sm text-zinc-400">
-              Jump into a game immediately. We'll find or create a room for you.
-            </p>
           </div>
         </div>
 
-        <div className="card">
-          <h2 className="text-2xl font-bold mb-4">Custom Room</h2>
-          <div className="space-y-4">
+        <div className="card border-2 border-blue-500/30 bg-gradient-to-br from-blue-500/5 to-purple-500/5">
+          <div className="text-center py-6">
+            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-blue-500/20 flex items-center justify-center">
+              <span className="text-2xl">🤖</span>
+            </div>
+            <h3 className="text-lg font-bold mb-2 text-blue-400">CPU対戦</h3>
+            <p className="text-sm text-zinc-400 mb-4">ドミニオンルールでCPUと1対1対戦</p>
+            <div className="space-y-2">
+              <button 
+                onClick={onStartDominion}
+                className="button-primary w-full"
+              >
+                🎴 カード選択して対戦
+              </button>
+              <button 
+                onClick={onStartDominionDirect}
+                className="button-secondary w-full"
+              >
+                🤖 すぐに対戦
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div className="card border-2 border-purple-500/30">
+          <div className="text-center py-6">
+            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-purple-500/10 flex items-center justify-center">
+              <span className="text-2xl">👥</span>
+            </div>
+            <h3 className="text-lg font-bold mb-2 text-purple-400">マルチプレイヤー対戦</h3>
+            <p className="text-sm text-zinc-400 mb-4">オンラインで2-4人対戦（工事中）</p>
             <button 
-              onClick={() => setShowCreateRoom(!showCreateRoom)}
-              disabled={connectionStatus !== 'connected'}
-              className="button-secondary w-full py-3 text-lg"
+              disabled
+              className="px-3 py-1 bg-zinc-600 text-zinc-400 rounded text-sm cursor-not-allowed w-full"
             >
-              ⚙️ Create Room
+              🚧 準備中
             </button>
-            <p className="text-sm text-zinc-400">
-              Set up a private room with custom settings and invite friends.
-            </p>
+          </div>
+        </div>
+
+        <div className="card border-2 border-green-500/30">
+          <div className="text-center py-6">
+            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-green-500/10 flex items-center justify-center">
+              <svg className="w-8 h-8 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+              </svg>
+            </div>
+            <h3 className="text-lg font-bold mb-2 text-green-400">カード作成</h3>
+            <p className="text-sm text-zinc-400 mb-4">オリジナルカードを作成</p>
+            <button 
+              onClick={onOpenCardBuilder}
+              className="button-secondary w-full"
+            >
+              ✨ 作成
+            </button>
           </div>
         </div>
       </div>
 
-      {/* Create Room Form */}
-      {showCreateRoom && (
-        <div className="card mb-8 border-2 border-blue-500/30">
-          <h3 className="text-xl font-semibold mb-4">Create New Room</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-zinc-300 mb-2">
-                Room Name
-              </label>
-              <input
-                type="text"
-                value={roomName}
-                onChange={(e) => setRoomName(e.target.value)}
-                placeholder="Enter room name..."
-                className="w-full px-3 py-2 bg-zinc-700 border border-zinc-600 rounded-lg text-white placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                maxLength={30}
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-zinc-300 mb-2">
-                Max Players
-              </label>
-              <select
-                value={maxPlayers}
-                onChange={(e) => setMaxPlayers(Number(e.target.value))}
-                className="w-full px-3 py-2 bg-zinc-700 border border-zinc-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value={2}>2 Players</option>
-                <option value={3}>3 Players</option>
-                <option value={4}>4 Players</option>
-              </select>
-            </div>
-          </div>
-          <div className="flex space-x-3 mt-4">
-            <button 
-              onClick={handleCreateRoom}
-              disabled={!roomName.trim() || connectionStatus !== 'connected'}
-              className="button-primary"
-            >
-              Create Room
-            </button>
-            <button 
-              onClick={() => setShowCreateRoom(false)}
-              className="button-secondary"
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      )}
 
-      {/* Rooms List */}
-      <div className="card">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold">Available Rooms</h2>
-          <button 
-            onClick={fetchRooms}
-            disabled={loading}
-            className="button-secondary text-sm"
-          >
-            {loading ? '⟳' : '🔄'} Refresh
-          </button>
+      {/* マルチプレイヤー機能（工事中表示） */}
+      <div className="card border-2 border-yellow-500/30 bg-gradient-to-br from-yellow-500/5 to-orange-500/5">
+        <div className="text-center py-8">
+          <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-yellow-500/20 flex items-center justify-center">
+            <span className="text-3xl">🚧</span>
+          </div>
+          <h2 className="text-2xl font-bold mb-4 text-yellow-400">マルチプレイヤー機能</h2>
+          <p className="text-lg text-zinc-300 mb-4">
+            現在、オンラインマルチプレイヤー機能を開発中です
+          </p>
+          <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4 mb-4">
+            <p className="text-sm text-yellow-200">
+              🔨 実装予定機能:
+            </p>
+            <ul className="text-sm text-zinc-300 mt-2 space-y-1">
+              <li>• リアルタイム2-4人対戦</li>
+              <li>• プライベートルーム作成</li>
+              <li>• 観戦モード</li>
+              <li>• カスタムカード共有</li>
+            </ul>
+          </div>
+          <p className="text-sm text-zinc-400">
+            現在はCPU対戦をお楽しみください！
+          </p>
         </div>
-
-        {loading ? (
-          <div className="text-center py-8 text-zinc-400">
-            Loading rooms...
-          </div>
-        ) : rooms.length === 0 ? (
-          <div className="text-center py-8 text-zinc-400">
-            <p className="mb-4">No rooms available</p>
-            <p className="text-sm">Create a room to get started!</p>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {rooms.map((room) => (
-              <div 
-                key={room.id}
-                className="flex items-center justify-between p-4 bg-zinc-700 rounded-lg border border-zinc-600 hover:border-zinc-500 transition-colors"
-              >
-                <div className="flex-1">
-                  <div className="flex items-center space-x-3">
-                    <h3 className="font-semibold">{room.name}</h3>
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      room.status === 'waiting' 
-                        ? 'bg-green-600/20 text-green-400 border border-green-600/30'
-                        : room.status === 'playing'
-                        ? 'bg-yellow-600/20 text-yellow-400 border border-yellow-600/30'
-                        : 'bg-red-600/20 text-red-400 border border-red-600/30'
-                    }`}>
-                      {room.status.toUpperCase()}
-                    </span>
-                  </div>
-                  <div className="flex items-center space-x-4 mt-1 text-sm text-zinc-400">
-                    <span>Players: {room.playerCount}/{room.maxPlayers}</span>
-                    <span>Created: {new Date(room.createdAt).toLocaleTimeString()}</span>
-                  </div>
-                </div>
-                
-                <div className="flex space-x-2">
-                  {room.status === 'waiting' && room.playerCount < room.maxPlayers ? (
-                    <button 
-                      onClick={() => handleJoinRoom(room.id)}
-                      disabled={connectionStatus !== 'connected'}
-                      className="button-primary text-sm"
-                    >
-                      Join Room
-                    </button>
-                  ) : room.status === 'playing' ? (
-                    <button 
-                      onClick={() => handleJoinRoom(room.id)}
-                      disabled={connectionStatus !== 'connected'}
-                      className="button-secondary text-sm"
-                    >
-                      Spectate
-                    </button>
-                  ) : (
-                    <button 
-                      disabled
-                      className="px-3 py-1 bg-zinc-600 text-zinc-400 rounded text-sm cursor-not-allowed"
-                    >
-                      {room.playerCount >= room.maxPlayers ? 'Full' : 'Finished'}
-                    </button>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
       </div>
 
       {/* Footer Stats */}
       <div className="mt-8 text-center text-zinc-400 text-sm">
         <div className="flex justify-center space-x-6">
-          <span>🎮 {rooms.filter(r => r.status === 'playing').length} Games in Progress</span>
-          <span>⏳ {rooms.filter(r => r.status === 'waiting').length} Rooms Waiting</span>
-          <span>👥 {rooms.reduce((sum, r) => sum + r.playerCount, 0)} Players Online</span>
+          <span>🎮 CPU対戦モード稼働中</span>
+          <span>🎨 カード作成機能利用可能</span>
+          <span>📚 チュートリアル完備</span>
         </div>
       </div>
     </div>

@@ -1,27 +1,108 @@
 # Development Instructions for Claude
 
+## 🚨 IMPORTANT: Debugging Policy
+**ユーザーにデバッグをさせるのではなく、提示する前にデバッグを行う**
+
+Claudeは以下の手順でデバッグを完了してからユーザーに結果を提示すること：
+
+1. **事前確認**: コマンド実行前にサーバー状態、ポート使用状況、プロセス状況を確認
+2. **完全テスト**: 機能を提示する前に実際に動作するかテスト
+3. **エラー解決**: 発見したエラーは即座に修正してから提示
+4. **動作確認**: 最終的にユーザーが使用可能な状態になってから報告
+5. **実環境テスト**: 実際の環境で修正されているかをテストしてから報告すること
+
+**NG例**: "接続が拒否されました。ポートを確認してください。"
+**OK例**: "問題を確認して修正しました。http://localhost:5173/ でゲームをお楽しみください。"
+
+## ⚠️ 必須: 実環境テスト報告
+**すべての修正は実際の環境でテストしてから報告すること**
+- コード修正後は必ずTypeScriptコンパイルとビルドを実行
+- 開発サーバーが正常に動作することを確認
+- ブラウザで実際の動作を検証してから報告
+- 推測や理論ではなく、実際のテスト結果を報告すること
+
 ## Commands to Remember
 
 ### Development
 ```bash
-# Start development servers
+# ✅ 推奨：自動復旧機能付き起動（ポート競合を自動解決）
 npm run dev
 
-# Start client only
-npm run dev:client
+# 🔧 問題発生時：強制クリーンアップ後に起動
+npm run dev:safe
 
-# Start server only  
-npm run dev:server
+# 🎯 個別起動
+npm run dev:client    # クライアントのみ
+npm run dev:server    # サーバーのみ
 
-# Build for production
+# 🛑 安全な停止
+npm run stop          # 通常停止
+npm run stop:force    # 強制停止
+
+# 📦 ビルド・テスト
 npm run build
-
-# Run tests
 npm run test
-
-# Run linting
 npm run lint
 ```
+
+### 🚨 緊急時の手動復旧
+```bash
+# プロセス強制停止
+./scripts/stop-dev.sh --force
+
+# クリーンアップ後に再起動
+./scripts/start-dev.sh --force-clean
+
+# 手動プロセス確認
+ps aux | grep -E "(vite|node|npm)"
+ss -tuln | grep -E ":5173|:5174|:3001"
+```
+
+## ⚠️ 重要: 完了時の必須チェック
+
+### 🔧 ビルドテスト
+**必ず以下のコマンドが成功することを確認してください:**
+```bash
+# 1. リンティングチェック
+npm run lint
+
+# 2. TypeScriptチェック（クライアント）
+cd client && npm run build:check
+
+# 3. プロダクションビルド
+npm run build
+
+# 4. テスト実行
+npm run test
+```
+
+### 🎯 動作確認チェックリスト
+**すべての機能が動作することを確認:**
+- ✅ **http://localhost:5173/** でクライアントアクセス可能
+- ✅ **WebSocket接続**: ブラウザコンソールで「接続済み」表示
+- ✅ **カード作成**: 保存ボタンで正常にカード作成可能
+- ✅ **カードコレクション**: 保存したカードが表示される
+- ✅ **CPU対戦**: 🤖ボタンでCPU対戦が開始される
+- ✅ **マルチプレイヤー**: ルーム作成・参加が可能
+
+### 🐛 トラブルシューティング
+**問題が発生した場合:**
+```bash
+# ✅ 推奨: 自動復旧機能を使用
+npm run dev:safe
+
+# 🔧 手動復旧（レガシー）
+npm run stop:force
+npm run dev
+```
+
+**詳細なトラブルシューティング:** [TROUBLESHOOTING.md](./TROUBLESHOOTING.md)
+
+### 🏗️ 自動復旧システム
+- **ポート競合の自動検出・回避**
+- **プロセス残留の自動クリーンアップ**  
+- **ヘルスチェック機能**
+- **WSL環境対応**
 
 ### Setup (First Time)
 ```bash
@@ -83,7 +164,19 @@ npm run dev
 - **🌍 Global Statistics** for cross-game card popularity and player insights
 - **⚡ Real-time voting sessions** with automatic timeout and result calculation
 
-### 🔮 Future Enhancements (Optional P3+)
+### 📚 ゲームルール
+
+### ドミニオン基本ルール
+詳細なルールは [DOMINION_RULES.md](./DOMINION_RULES.md) を参照してください。
+
+**要点:**
+- **3フェーズ制**: アクション → 購入 → クリーンアップ
+- **手動財宝プレイ**: 購入フェーズで財宝カードを手動でプレイしてコイン獲得
+- **制限システム**: アクション1回・購入1回（カード効果で増加可能）
+- **勝利条件**: 属州枯渇 or 3種類のカード山枯渇
+- **得点計算**: 自分のデッキ内の勝利点カード合計
+
+## 🔮 Future Enhancements (Optional P3+)
 - BigQuery analytics for production usage tracking
 - Production deployment configs with Docker/k8s
 - Advanced card balancing AI recommendations

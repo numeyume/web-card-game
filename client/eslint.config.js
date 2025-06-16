@@ -11,7 +11,9 @@ export default [
     files: ['**/*.{ts,tsx}'],
     languageOptions: {
       ecmaVersion: 2020,
-      globals: globals.browser,
+      globals: Object.fromEntries(
+        Object.entries(globals.browser).map(([key, value]) => [key.trim(), value])
+      ),
       parser: tsParser,
     },
     plugins: {

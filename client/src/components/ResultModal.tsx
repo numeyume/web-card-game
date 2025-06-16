@@ -1,6 +1,6 @@
-import React, { useState, useMemo } from 'react'
+import { useState, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import type { GameEndResult, CardUsageStats, PlayerRanking } from '@/types'
+import type { GameEndResult } from '@/types'
 
 interface ResultModalProps {
   isOpen: boolean

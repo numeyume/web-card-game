@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react'
-import type { GameEndResult, FinalScores } from '@/types'
+import { useState, useEffect } from 'react'
+import type { GameEndResult } from '@/types'
 
 interface EndGameModalProps {
   isOpen: boolean

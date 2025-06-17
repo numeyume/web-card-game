@@ -8,11 +8,12 @@ import { EndGameModal } from '@/components/EndGameModal'
 interface InteractiveTutorialProps {
   onComplete: () => void
   onExit: () => void
+  onBackToGuide?: () => void
   selectedCards?: any[]
   isCPUMode?: boolean
 }
 
-export function InteractiveTutorial({ onComplete, onExit, selectedCards, isCPUMode = false }: InteractiveTutorialProps) {
+export function InteractiveTutorial({ onComplete, onExit, onBackToGuide, selectedCards, isCPUMode = false }: InteractiveTutorialProps) {
   const [gameEngine] = useState(() => new DominionEngine((newGameState) => {
     console.log('🔄 ゲーム状態更新:', {
       turn: newGameState.turn,
@@ -31,6 +32,109 @@ export function InteractiveTutorial({ onComplete, onExit, selectedCards, isCPUMo
   const [selectedCard, setSelectedCard] = useState<string | null>(null)
   const [showEndGameModal, setShowEndGameModal] = useState(false)
   
+  // チュートリアル専用の状態管理
+  const [tutorialStep, setTutorialStep] = useState(0)
+  const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set())
+  const [showCPUIndicator, setShowCPUIndicator] = useState(false)
+  
+  // チュートリアルステップ定義
+  const tutorialSteps = [
+    {
+      id: 0,
+      title: "ゲーム開始",
+      description: "まずはゲームを開始しましょう！",
+      action: "start_game",
+      highlight: ".start-game-btn"
+    },
+    {
+      id: 1,
+      title: "手札を確認",
+      description: "あなたの手札は7枚の財宝カード（銅貨）と3枚の勝利点カード（屋敷）です。まずは手札を確認してみましょう。",
+      action: "view_hand",
+      highlight: ".hand-cards"
+    },
+    {
+      id: 2,
+      title: "アクションフェーズ",
+      description: "最初はアクションカードがないので、アクションフェーズをスキップします。「購入フェーズへ」ボタンを押してください。",
+      action: "skip_action",
+      highlight: ".skip-action-btn"
+    },
+    {
+      id: 3,
+      title: "財宝カードをプレイ",
+      description: "購入フェーズでは、まず財宝カードをプレイしてコインを得ます。手札の銅貨をクリックしてプレイしましょう。",
+      action: "play_treasure",
+      highlight: ".treasure-cards"
+    },
+    {
+      id: 4,
+      title: "カードを購入",
+      description: "コインを使ってカードを購入します。まずは安価なアクションカード（工房など）を購入してみましょう。",
+      action: "buy_card",
+      highlight: ".supply-cards"
+    },
+    {
+      id: 5,
+      title: "ターン終了",
+      description: "購入が終わったら「ターン終了」ボタンを押します。使ったカードは捨て札置き場に移動し、新しい5枚を引きます。",
+      action: "end_turn",
+      highlight: ".end-turn-btn"
+    }
+  ]
+  
+  const getCurrentTutorialStep = () => {
+    if (isCPUMode || !gameState) return null
+    return tutorialSteps[tutorialStep] || null
+  }
+  
+  const advanceTutorialStep = () => {
+    if (!isCPUMode && tutorialStep < tutorialSteps.length - 1) {
+      setCompletedSteps(prev => new Set([...prev, tutorialStep]))
+      setTutorialStep(prev => prev + 1)
+      
+      // ステップ2（手札確認）に到達したら自動で次に進む
+      if (tutorialStep === 1) {
+        setTimeout(() => {
+          setCompletedSteps(prev => new Set([...prev, 1]))
+          setTutorialStep(prev => prev + 1)
+        }, 4000)
+      }
+    } else if (!isCPUMode && tutorialStep >= tutorialSteps.length - 1) {
+      // チュートリアル完了
+      setCompletedSteps(prev => new Set([...prev, tutorialStep]))
+      toast.success('🎉 チュートリアル完了！基本的な操作を覚えました！')
+    }
+  }
+
+  const goToPreviousStep = () => {
+    if (!isCPUMode && tutorialStep > 0) {
+      setTutorialStep(prev => prev - 1)
+      // 前のステップが完了済みから除外される場合の処理
+      setCompletedSteps(prev => {
+        const newSet = new Set(prev)
+        newSet.delete(tutorialStep - 1)
+        return newSet
+      })
+    }
+  }
+
+  const goToSpecificStep = (stepIndex: number) => {
+    if (!isCPUMode && stepIndex >= 0 && stepIndex < tutorialSteps.length) {
+      setTutorialStep(stepIndex)
+      // 指定したステップ以降の完了状態をリセット
+      setCompletedSteps(prev => {
+        const newSet = new Set()
+        for (let i = 0; i < stepIndex; i++) {
+          if (prev.has(i)) {
+            newSet.add(i)
+          }
+        }
+        return newSet
+      })
+    }
+  }
+  
   // ツールチップ状態
   const [tooltip, setTooltip] = useState<{
     show: boolean
@@ -48,6 +152,24 @@ export function InteractiveTutorial({ onComplete, onExit, selectedCards, isCPUMo
       setShowEndGameModal(true)
     }
   }, [gameState])
+
+  // CPUターン表示管理
+  useEffect(() => {
+    if (gameState && !gameEngine.isCurrentPlayerHuman()) {
+      // CPUターンになったら表示
+      setShowCPUIndicator(true)
+      
+      // 4秒後に非表示
+      const timer = setTimeout(() => {
+        setShowCPUIndicator(false)
+      }, 4000)
+      
+      return () => clearTimeout(timer)
+    } else {
+      // プレイヤーターンの場合は即座に非表示
+      setShowCPUIndicator(false)
+    }
+  }, [gameState, gameEngine])
 
   // ゲーム開始関数（useCallbackで安定化）
   const startGame = useCallback(() => {
@@ -397,9 +519,14 @@ export function InteractiveTutorial({ onComplete, onExit, selectedCards, isCPUMo
           
           <div className="space-y-4">
             <button
-              onClick={startGame}
+              onClick={() => {
+                startGame()
+                if (!isCPUMode) {
+                  setTutorialStep(1) // ゲーム開始後の最初のステップに移動
+                }
+              }}
               disabled={isLoading}
-              className="btn-primary text-lg px-8 py-3 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="btn-primary text-lg px-8 py-3 disabled:opacity-50 disabled:cursor-not-allowed start-game-btn"
             >
               {isLoading ? (
                 <span className="flex items-center space-x-2">
@@ -547,13 +674,113 @@ export function InteractiveTutorial({ onComplete, onExit, selectedCards, isCPUMo
             </div>
           )}
         </div>
-        <button onClick={onExit} className="btn-secondary text-sm">
-          終了
-        </button>
+        <div className="flex space-x-2">
+          {!isCPUMode && onBackToGuide && (
+            <button 
+              onClick={onBackToGuide} 
+              className="btn-secondary text-sm px-3 py-1"
+              title="ルール説明に戻る"
+            >
+              📖 ガイドに戻る
+            </button>
+          )}
+          <button onClick={onExit} className="btn-secondary text-sm">
+            終了
+          </button>
+        </div>
       </div>
 
-      {/* CPU visual feedback - grayout effect when CPU turn */}
-      {!currentPlayer.isHuman && (
+      {/* チュートリアル指示パネル - チュートリアルモード時のみ表示 */}
+      {!isCPUMode && getCurrentTutorialStep() && (
+        <div className="card mb-6 border-2 border-blue-500/50 bg-gradient-to-r from-blue-500/15 to-indigo-600/10 shadow-lg shadow-blue-500/20 animate-pulse-subtle">
+          <div className="flex items-center space-x-3 mb-3">
+            <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold text-sm animate-bounce-subtle">
+              {tutorialStep + 1}
+            </div>
+            <h3 className="text-lg font-bold text-blue-300">
+              📖 {getCurrentTutorialStep()?.title}
+            </h3>
+            <div className="flex items-center space-x-1 text-yellow-400 animate-pulse">
+              <span className="text-lg">👆</span>
+              <span className="text-sm font-medium">今これをしてください！</span>
+            </div>
+          </div>
+          
+          <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-3 mb-4">
+            <p className="text-blue-100 leading-relaxed font-medium">
+              {getCurrentTutorialStep()?.description}
+            </p>
+            
+            {/* ステップ別の詳細指示 */}
+            {tutorialStep === 2 && (
+              <div className="mt-2 text-blue-200 text-sm">
+                💡 ヒント: 青い「購入へ ➡️」ボタンを押してください
+              </div>
+            )}
+            {tutorialStep === 3 && (
+              <div className="mt-2 text-blue-200 text-sm">
+                💡 ヒント: 手札の黄色く光っている💰銅貨をクリックしてください
+              </div>
+            )}
+            {tutorialStep === 4 && (
+              <div className="mt-2 text-blue-200 text-sm">
+                💡 ヒント: サプライの緑色に光っているカードをクリックしてください
+              </div>
+            )}
+            {tutorialStep === 5 && (
+              <div className="mt-2 text-blue-200 text-sm">
+                💡 ヒント: 青い「ターン終了 ➡️」ボタンを押してください
+              </div>
+            )}
+          </div>
+          
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3 text-sm text-blue-300">
+              <span>進捗: {tutorialStep + 1}/{tutorialSteps.length}</span>
+              <div className="flex space-x-1">
+                {tutorialSteps.map((_, index) => (
+                  <button
+                    key={index}
+                    onClick={() => goToSpecificStep(index)}
+                    className={`w-6 h-6 rounded-full transition-all duration-300 text-xs font-bold hover:scale-110 ${
+                      completedSteps.has(index) ? 'bg-green-400 text-white animate-pulse hover:bg-green-300' :
+                      index === tutorialStep ? 'bg-blue-400 text-white animate-bounce hover:bg-blue-300' :
+                      'bg-zinc-600 text-zinc-300 hover:bg-zinc-500'
+                    }`}
+                    title={`ステップ${index + 1}: ${tutorialSteps[index]?.title}`}
+                  >
+                    {index + 1}
+                  </button>
+                ))}
+              </div>
+            </div>
+            
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={goToPreviousStep}
+                className="btn-secondary text-sm px-2 py-1 flex items-center space-x-1"
+                disabled={tutorialStep <= 0}
+                title="前のステップに戻る"
+              >
+                <span>←</span>
+                <span>戻る</span>
+              </button>
+              <button
+                onClick={advanceTutorialStep}
+                className="btn-primary text-sm px-2 py-1 flex items-center space-x-1"
+                disabled={tutorialStep >= tutorialSteps.length - 1}
+                title="次のステップに進む"
+              >
+                <span>次へ</span>
+                <span>→</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* CPU visual feedback - 4秒間のみ表示 */}
+      {showCPUIndicator && !currentPlayer.isHuman && (
         <div className="card mb-4 border-2 border-orange-500/50 bg-gradient-to-r from-orange-500/15 to-orange-600/10 shadow-lg shadow-orange-500/20">
           <div className="flex items-center justify-center space-x-3 py-4">
             <div className="relative">
@@ -620,8 +847,8 @@ export function InteractiveTutorial({ onComplete, onExit, selectedCards, isCPUMo
         </div>
       </div>
 
-      {/* 簡略プレイヤー情報 - CPUターン時のみ */}
-      {!isMyTurn && (
+      {/* 簡略プレイヤー情報 - CPUターン時のみ（4秒間表示） */}
+      {showCPUIndicator && !isMyTurn && (
         <div className={`card mb-4 ${!isMyTurn ? 'opacity-60 pointer-events-none' : ''}`}>
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
@@ -713,8 +940,23 @@ export function InteractiveTutorial({ onComplete, onExit, selectedCards, isCPUMo
               )}
               
               <button
-                onClick={moveToNextPhase}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm transition-all duration-200 flex items-center space-x-1 hover:scale-105 hover:shadow-lg hover:shadow-blue-500/25 active:scale-95"
+                onClick={() => {
+                  moveToNextPhase()
+                  if (!isCPUMode) {
+                    if (gameState.phase === 'action' && tutorialStep === 2) {
+                      advanceTutorialStep() // アクション→購入フェーズ
+                    } else if (gameState.phase === 'buy' && tutorialStep === 5) {
+                      advanceTutorialStep() // ターン終了
+                    }
+                  }
+                }}
+                className={`bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm transition-all duration-200 flex items-center space-x-1 hover:scale-105 hover:shadow-lg hover:shadow-blue-500/25 active:scale-95 ${
+                  gameState.phase === 'action' ? 'skip-action-btn' : 'end-turn-btn'
+                } ${
+                  !isCPUMode && ((gameState.phase === 'action' && tutorialStep === 2) || (gameState.phase === 'buy' && tutorialStep === 5)) 
+                    ? 'ring-2 ring-blue-400 animate-pulse shadow-lg shadow-blue-400/50' 
+                    : ''
+                }`}
               >
                 <span>➡️</span>
                 <span>
@@ -748,7 +990,7 @@ export function InteractiveTutorial({ onComplete, onExit, selectedCards, isCPUMo
           )}
           
           {/* 手札カード - 横並びグリッド */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 hand-cards">
             {humanPlayer.hand.map((card: Card, index: number) => (
               <div
                 key={`${card.id}-${index}`}
@@ -756,16 +998,20 @@ export function InteractiveTutorial({ onComplete, onExit, selectedCards, isCPUMo
                   card.type === 'Action' && gameState.phase === 'action' && isMyTurn
                     ? 'border-blue-500 bg-blue-500/10 hover:bg-blue-500/20'
                     : card.type === 'Treasure' && gameState.phase === 'buy' && isMyTurn
-                      ? 'border-yellow-500 bg-yellow-500/10 hover:bg-yellow-500/20'
+                      ? `border-yellow-500 bg-yellow-500/10 hover:bg-yellow-500/20 treasure-cards ${!isCPUMode && tutorialStep === 3 ? 'ring-2 ring-yellow-400 animate-pulse shadow-lg shadow-yellow-400/50' : ''}`
                       : card.type === 'Victory'
                         ? 'border-purple-500/30 bg-purple-500/5'
                         : 'border-zinc-600'
-                }`}
+                } ${card.type === 'Treasure' ? 'treasure-cards' : ''}`}
                 onClick={() => {
                   if (card.type === 'Action' && gameState.phase === 'action' && isMyTurn) {
                     playActionCard(card)
                   } else if (card.type === 'Treasure' && gameState.phase === 'buy' && isMyTurn) {
                     playTreasureCard(card)
+                    // チュートリアルステップを進める
+                    if (!isCPUMode && tutorialStep === 3) {
+                      setTimeout(() => advanceTutorialStep(), 1000)
+                    }
                   }
                 }}
                 onMouseEnter={(e) => showTooltip(card, undefined, e)}
@@ -798,7 +1044,7 @@ export function InteractiveTutorial({ onComplete, onExit, selectedCards, isCPUMo
       {/* サプライ - 1カラム全幅表示 */}
       <div className="card mb-6">
         <h3 className="font-bold mb-4">🏪 サプライ</h3>
-        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-9 gap-3">
+        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-9 gap-3 supply-cards">
           {Object.entries(gameState.supply).map(([cardId, pile]: [string, any]) => {
             const canBuy = gameState.phase === 'buy' && isMyTurn && 
                           currentPlayer.coins >= pile.cost && 
@@ -817,7 +1063,7 @@ export function InteractiveTutorial({ onComplete, onExit, selectedCards, isCPUMo
                     : isSelected
                       ? 'border-yellow-500 bg-yellow-500/20 ring-2 ring-yellow-500'
                       : canBuy 
-                        ? 'border-green-500 bg-green-500/10 hover:bg-green-500/20' 
+                        ? `border-green-500 bg-green-500/10 hover:bg-green-500/20 ${!isCPUMode && tutorialStep === 4 ? 'ring-2 ring-green-400 animate-pulse shadow-lg shadow-green-400/50' : ''}`
                         : gameState.phase === 'buy' && isMyTurn
                           ? 'border-red-500/50 bg-red-500/5'
                           : 'border-zinc-600 hover:border-zinc-400'
@@ -829,6 +1075,10 @@ export function InteractiveTutorial({ onComplete, onExit, selectedCards, isCPUMo
                 onClick={() => {
                   if (gameState.phase === 'buy' && isMyTurn && !isEmpty) {
                     selectCard(cardId)
+                    // チュートリアルステップを進める（カード選択時）
+                    if (!isCPUMode && tutorialStep === 4) {
+                      setTimeout(() => advanceTutorialStep(), 1000)
+                    }
                   }
                 }}
                 onMouseEnter={(e) => showTooltip(pile.card, pile.cost, e)}

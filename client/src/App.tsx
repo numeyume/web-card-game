@@ -275,11 +275,13 @@ function App() {
             {currentView === 'interactive-tutorial' && (
               <div className="animate-slide-up">
                 <InteractiveTutorial 
-                  onComplete={() => setCurrentView('dominion')}
+                  onComplete={() => setCurrentView('lobby')}
                   onExit={() => {
                     setSelectedCards([]) // カスタムカードをリセット
                     setCurrentView('lobby')
                   }}
+                  onBackToGuide={() => setCurrentView('tutorial')}
+                  isCPUMode={false}
                 />
               </div>
             )}
